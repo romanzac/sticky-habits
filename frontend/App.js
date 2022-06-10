@@ -39,26 +39,15 @@ export default function App() {
     return (
       <main>
         <h1>
-          <label
-            htmlFor="greeting"
-            style={{
-              color: 'var(--secondary)',
-              borderBottom: '2px solid var(--secondary)'
-            }}
-          >
-            {greeting}
-          </label>!
-          Welcome to NEAR!
+          Welcome to Accountability Buddy!
         </h1>
         <p>
-        Your contract is storing a greeting message in the NEAR blockchain. To
-        change it you need to sign in using the NEAR Wallet. It is very simple,
-        just use the button below.
+        Your friend on the path to success. Would you like to build new habit or get
+        rid of the old one ?
         </p>
         <p>
-        Do not worry, this app runs in the test network ("testnet"). It works
-        just like the main network ("mainnet"), but using NEAR Tokens that are
-        only for testing!
+        Habits are built by actions we keep doing for at least 21 days. I will remember all actions you set.
+            Give you feedback and make sure you progress with ease.
         </p>
         <p style={{ textAlign: 'center', marginTop: '2.5em' }}>
           <button onClick={login}>Sign in</button>
