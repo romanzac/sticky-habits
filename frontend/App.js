@@ -74,7 +74,7 @@ export default function App() {
             {greeting}
           </label>
           {' '/* React trims whitespace around tags; insert literal space character when needed */}
-          {window.accountId}!
+          {window.accountId}
         </h1>
         <form onSubmit={async event => {
           event.preventDefault()
@@ -125,12 +125,11 @@ export default function App() {
                 marginBottom: '0.5em'
               }}
             >
-              Change greeting
             </label>
             <div style={{ display: 'flex' }}>
               <input
                 autoComplete="off"
-                defaultValue={greeting}
+                defaultValue="Go to gym "
                 id="greeting"
                 onChange={e => setButtonDisabled(e.target.value === greeting)}
                 style={{ flex: 1 }}
@@ -139,27 +138,47 @@ export default function App() {
                 disabled={buttonDisabled}
                 style={{ borderRadius: '0 5px 5px 0' }}
               >
-                Save
+                Add New Action
               </button>
             </div>
           </fieldset>
         </form>
         <p>
-          Look at that! A Hello World app! This greeting is stored on the NEAR blockchain. Check it out:
+          What are you up to ?
         </p>
-        <ol>
-          <li>
-            Look in <code>src/App.js</code> and <code>src/utils.js</code> – you'll see <code>get_greeting</code> and <code>set_greeting</code> being called on <code>contract</code>. What's this?
-          </li>
-          <li>
-            Ultimately, this <code>contract</code> code is defined in <code>assembly/main.ts</code> – this is the source code for your <a target="_blank" rel="noreferrer" href="https://docs.near.org/docs/develop/contracts/overview">smart contract</a>.</li>
-          <li>
-            When you run <code>yarn dev</code>, the code in <code>assembly/main.ts</code> gets deployed to the NEAR testnet. You can see how this happens by looking in <code>package.json</code> at the <code>scripts</code> section to find the <code>dev</code> command.</li>
-        </ol>
-        <hr />
-        <p>
-          To keep learning, check out <a target="_blank" rel="noreferrer" href="https://docs.near.org">the NEAR docs</a> or look through some <a target="_blank" rel="noreferrer" href="https://examples.near.org">example apps</a>.
-        </p>
+          <table style={{ width: '150%' }}>
+              <tr>
+                  <th>Action</th>
+                  <th>Deadline</th>
+                  <th>Penalty</th>
+                  <th>Give to</th>
+              </tr>
+              <tr>
+                  <td>Eat no cake this week</td>
+                  <td>Sunday June 31st</td>
+                  <td>$100</td>
+                  <td>neighbor.test.near</td>
+              </tr>
+              <tr>
+                  <td>Help my mother trash the trash</td>
+                  <td>Friday June 28th</td>
+                  <td>$150</td>
+                  <td>mother.test.near</td>
+              </tr>
+          </table>
+          <hr />
+          <label
+              htmlFor="greeting"
+              style={{
+                  display: 'block',
+                  color: 'var(--gray)',
+                  marginBottom: '0.5em'
+              }}
+          >
+              Given away total: 1000$
+              Success rate: 80%
+          </label>
+
       </main>
       {showNotification && <Notification />}
     </>
