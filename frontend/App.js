@@ -3,7 +3,7 @@ import React from 'react'
 
 import './assets/css/global.css'
 
-import {login, logout, get_greeting, set_greeting} from './assets/js/near/utils'
+import {login, logout, get_greeting, add_action} from './assets/js/near/utils'
 import getConfig from './assets/js/near/config'
 
 
@@ -64,85 +64,19 @@ export default function App() {
       </button>
       <main>
         <h1>
-          <label
-            htmlFor="greeting"
-            style={{
-              color: 'var(--secondary)',
-              borderBottom: '2px solid var(--secondary)'
-            }}
-          >
-            {greeting}
-          </label>
+          {/*<label*/}
+          {/*  htmlFor="greeting"*/}
+          {/*  style={{*/}
+          {/*    color: 'var(--secondary)',*/}
+          {/*    borderBottom: '2px solid var(--secondary)'*/}
+          {/*  }}*/}
+          {/*>*/}
+          {/*  {greeting}*/}
+          {/*</label>*/}
           {' '/* React trims whitespace around tags; insert literal space character when needed */}
-          {window.accountId}
+          Hello {window.accountId}
         </h1>
-        <form onSubmit={async event => {
-          event.preventDefault()
 
-          // get elements from the form using their id attribute
-          const { fieldset, greeting } = event.target.elements
-
-          // hold onto new user-entered value from React's SynthenticEvent for use after `await` call
-          const newGreeting = greeting.value
-
-          // disable the form while the value gets updated on-chain
-          fieldset.disabled = true
-
-          try {
-            // make an update call to the smart contract
-            // pass the value that the user entered in the greeting field
-            await set_greeting(newGreeting)
-          } catch (e) {
-            alert(
-              'Something went wrong! ' +
-              'Maybe you need to sign out and back in? ' +
-              'Check your browser console for more info.'
-            )
-            throw e
-          } finally {
-            // re-enable the form, whether the call succeeded or failed
-            fieldset.disabled = false
-          }
-
-          // update local `greeting` variable to match persisted value
-          setGreeting(newGreeting)
-
-          // show Notification
-          setShowNotification(true)
-
-          // remove Notification again after css animation completes
-          // this allows it to be shown again next time the form is submitted
-          setTimeout(() => {
-            setShowNotification(false)
-          }, 11000)
-        }}>
-          <fieldset id="fieldset">
-            <label
-              htmlFor="greeting"
-              style={{
-                display: 'block',
-                color: 'var(--gray)',
-                marginBottom: '0.5em'
-              }}
-            >
-            </label>
-            <div style={{ display: 'flex' }}>
-              <input
-                autoComplete="off"
-                defaultValue="Go to gym "
-                id="greeting"
-                onChange={e => setButtonDisabled(e.target.value === greeting)}
-                style={{ flex: 1 }}
-              />
-              <button
-                disabled={buttonDisabled}
-                style={{ borderRadius: '0 5px 5px 0' }}
-              >
-                Add New Action
-              </button>
-            </div>
-          </fieldset>
-        </form>
         <p>
           What are you up to ?
         </p>
@@ -155,17 +89,108 @@ export default function App() {
               </tr>
               <tr>
                   <td>Eat no cake this week</td>
-                  <td>Sunday June 31st</td>
+                  <td>June 31st</td>
                   <td>$100</td>
                   <td>neighbor.test.near</td>
               </tr>
               <tr>
                   <td>Help my mother trash the trash</td>
-                  <td>Friday June 28th</td>
+                  <td>June 28th</td>
                   <td>$150</td>
                   <td>mother.test.near</td>
               </tr>
           </table>
+          <form onSubmit={async event => {
+              event.preventDefault()
+
+              // get elements from the form using their id attribute
+              const { fieldset, action, deadline, penalty, beneficiary } = event.target.elements
+
+              // hold onto new user-entered values from React's SynthenticEvent for use after `await` call
+              const newAction = action.value
+              const newDeadline = deadline.value
+              const newPenalty = penalty.value
+              const newBeneficiary = beneficiary.value
+
+              // disable the form while the value gets updated on-chain
+              fieldset.disabled = true
+
+              try {
+                  // make an update call to the smart contract
+                  // pass the value that the user entered in the greeting field
+                  await add_action(newAction, newDeadline, newPenalty, newBeneficiary)
+              } catch (e) {
+                  alert(
+                      'Something went wrong! ' +
+                      'Maybe you need to sign out and back in? ' +
+                      'Check your browser console for more info.'
+                  )
+                  throw e
+              } finally {
+                  // re-enable the form, whether the call succeeded or failed
+                  fieldset.disabled = false
+              }
+
+              // update local `greeting` variable to match persisted value
+              setGreeting(newGreeting)
+
+              // show Notification
+              setShowNotification(true)
+
+              // remove Notification again after css animation completes
+              // this allows it to be shown again next time the form is submitted
+              setTimeout(() => {
+                  setShowNotification(false)
+              }, 11000)
+          }}>
+              <fieldset id="fieldset">
+                  <label
+                      htmlFor="greeting"
+                      style={{
+                          display: 'block',
+                          color: 'var(--gray)',
+                          marginBottom: '0.5em'
+                      }}
+                  >
+                  </label>
+                  <div style={{ display: 'flex' }}>
+                      <input
+                          autoComplete="off"
+                          defaultValue="Go to gym "
+                          id="action"
+                          onChange={e => setButtonDisabled(e.target.value === action)}
+                          style={{ flex: 1 }}
+                      />
+                      <input
+                          autoComplete="off"
+                          defaultValue="January 1st"
+                          id="deadline"
+                          onChange={e => setButtonDisabled(e.target.value === deadline)}
+                          style={{ flex: 1 }}
+                      />
+                      <input
+                          autoComplete="off"
+                          defaultValue="$100"
+                          id="penalty"
+                          onChange={e => setButtonDisabled(e.target.value === penalty)}
+                          style={{ flex: 1 }}
+                      />
+                      <input
+                          autoComplete="off"
+                          defaultValue="neighbor.near"
+                          id="beneficiary"
+                          onChange={e => setButtonDisabled(e.target.value === beneficiary)}
+                          style={{ flex: 1 }}
+                      />
+                      <button
+                          disabled={buttonDisabled}
+                          style={{ borderRadius: '0 5px 5px 0' }}
+                      >
+                          Add New Action
+                      </button>
+                  </div>
+              </fieldset>
+          </form>
           <hr />
           <label
               htmlFor="greeting"
