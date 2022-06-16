@@ -64,16 +64,6 @@ export default function App() {
       </button>
       <main>
         <h1>
-          {/*<label*/}
-          {/*  htmlFor="greeting"*/}
-          {/*  style={{*/}
-          {/*    color: 'var(--secondary)',*/}
-          {/*    borderBottom: '2px solid var(--secondary)'*/}
-          {/*  }}*/}
-          {/*>*/}
-          {/*  {greeting}*/}
-          {/*</label>*/}
-          {' '/* React trims whitespace around tags; insert literal space character when needed */}
           Hello {window.accountId}
         </h1>
 
