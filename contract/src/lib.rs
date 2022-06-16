@@ -12,17 +12,26 @@ use near_sdk::{log, near_bindgen};
 // Define the default message
 const DEFAULT_MESSAGE: &str = "Hello";
 
+#[derive(BorshSerialize, BorshStorageKey)]
+struct Action {
+    description: String,
+    deadline: String,
+    penalty: String,
+    beneficiary: String
+}
+
 // Define the contract structure
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct Contract {
     message: String,
+    actions: Vec<Action>
 }
 
 // Define the default, which automatically initializes the contract
 impl Default for Contract{
     fn default() -> Self{
-        Self{message: DEFAULT_MESSAGE.to_string()}
+        Self{message: DEFAULT_MESSAGE.to_string(), actions: vec![] }
     }
 }
 
@@ -39,6 +48,15 @@ impl Contract {
         // Use env::log to record logs permanently to the blockchain!
         log!("Saving greeting {}", message);
         self.message = message;
+    }
+
+    pub fn add_action(&mut self, description: String, deadline: String, penalty: String, beneficiary: String) {
+        if self.actions.len() < 7 {
+            log!("Adding new action {}", description);
+            self.actions.push(Action{description, deadline, penalty, beneficiary});
+        } else {
+            log!("Only 7 actions are supported at the same time");
+        }
     }
 }
 
