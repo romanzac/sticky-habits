@@ -12,9 +12,6 @@ use near_sdk::{env, AccountId, Balance, near_bindgen, log};
 use near_sdk::collections::{Vector};
 use near_sdk::json_types::{U128};
 
-// Define the default message
-const DEFAULT_MESSAGE: &str = "Hello";
-
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, Serialize)]
 #[serde(crate = "near_sdk::serde")]
@@ -27,13 +24,13 @@ pub struct Habit {
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize)]
-pub struct AccBuddy {
+pub struct StickyHabits {
     habits: Vector<Habit>,
 }
 
 
 // Define the default, which automatically initializes the contract
-impl Default for AccBuddy {
+impl Default for StickyHabits {
     fn default() -> Self{
         Self{ habits: Vector::new(b"m") }
     }
@@ -41,7 +38,7 @@ impl Default for AccBuddy {
 
 // Implement the contract structure
 #[near_bindgen]
-impl AccBuddy {
+impl StickyHabits {
 
     // Returns an array of habits.
     pub fn get_habits(&self, from_index:Option<U128>, limit:Option<u64>) -> Vec<Habit>{
@@ -75,7 +72,7 @@ mod tests {
 
     #[test]
     fn get_default_greeting() {
-        let contract = AccBuddy::default();
+        let contract = StickyHabits::default();
         // this test did not call set_greeting so should return the default "Hello" greeting
         assert_eq!(
             contract.get_greeting(),
@@ -85,7 +82,7 @@ mod tests {
 
     #[test]
     fn set_then_get_greeting() {
-        let mut contract = AccBuddy::default();
+        let mut contract = StickyHabits::default();
         contract.set_greeting("howdy".to_string());
         assert_eq!(
             contract.get_greeting(),

@@ -39,15 +39,14 @@ export default function App() {
     return (
       <main>
         <h1>
-          Welcome to Accountability Buddy!
+          Welcome to Sticky Habits!
         </h1>
         <p>
-        Your friend on the path to success. Would you like to build new habit or get
-        rid of the old one ?
+         Would you like to build new habit or get rid of the old one ?
         </p>
         <p>
         Habits are built when we keep going for at least 21 days. I will remember all habits you set.
-            Give you feedback and make sure you progress with ease.
+            Link your friend and make yourself accountable.
         </p>
         <p style={{ textAlign: 'center', marginTop: '2.5em' }}>
           <button onClick={login}>Sign in</button>
