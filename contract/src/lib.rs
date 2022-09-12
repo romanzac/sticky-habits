@@ -8,7 +8,7 @@
 
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::serde::Serialize;
-use near_sdk::{env, AccountId, Balance, near_bindgen};
+use near_sdk::{env, AccountId, Balance, near_bindgen, log};
 use near_sdk::collections::{Vector};
 use near_sdk::json_types::{U128};
 
@@ -18,7 +18,7 @@ const DEFAULT_MESSAGE: &str = "Hello";
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, Serialize)]
 #[serde(crate = "near_sdk::serde")]
-pub struct Action {
+pub struct Habit {
     description: String,
     deadline: String,
     penalty: String,
@@ -28,38 +28,39 @@ pub struct Action {
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct AccBuddy {
-    actions: Vector<Action>,
+    habits: Vector<Habit>,
 }
 
 
 // Define the default, which automatically initializes the contract
-impl Default for AccBuddy{
+impl Default for AccBuddy {
     fn default() -> Self{
-        Self{ actions: Vector::new() }
+        Self{ habits: Vector::new(b"m") }
     }
 }
 
 // Implement the contract structure
 #[near_bindgen]
 impl AccBuddy {
-    // Public method - returns the greeting saved, defaulting to DEFAULT_MESSAGE
-    pub fn get_greeting(&self) -> String {
-        return self.message.clone();
+
+    // Returns an array of habits.
+    pub fn get_habits(&self, from_index:Option<U128>, limit:Option<u64>) -> Vec<Habit>{
+        let from = u128::from(from_index.unwrap_or(U128(0)));
+
+        self.habits.iter()
+            .skip(from as usize)
+            .take(limit.unwrap_or(10) as usize)
+            .collect()
     }
 
-    // Public method - accepts a greeting, such as "howdy", and records it
-    pub fn set_greeting(&mut self, message: String) {
-        // Use env::log to record logs permanently to the blockchain!
-        log!("Saving greeting {}", message);
-        self.message = message;
-    }
-
-    pub fn add_action(&mut self, description: String, deadline: String, penalty: String, beneficiary: String) {
-        if self.actions.len() < 7 {
-            log!("Adding new action {}", description);
-            self.actions.push(Action{description, deadline, penalty, beneficiary});
+    // Adds new habit
+    #[payable]
+    pub fn add_habit(&mut self, description: String, deadline: String, penalty: String, beneficiary: String) {
+        if self.habits.len() < 7 {
+            log!("Adding new habit {}", description);
+            self.habits.push(&Habit{ description, deadline, penalty, beneficiary });
         } else {
-            log!("Only 7 actions are supported at the same time");
+            log!("Only 7 habits are supported at the same time");
         }
     }
 }
@@ -74,7 +75,7 @@ mod tests {
 
     #[test]
     fn get_default_greeting() {
-        let contract = Contract::default();
+        let contract = AccBuddy::default();
         // this test did not call set_greeting so should return the default "Hello" greeting
         assert_eq!(
             contract.get_greeting(),
@@ -84,7 +85,7 @@ mod tests {
 
     #[test]
     fn set_then_get_greeting() {
-        let mut contract = Contract::default();
+        let mut contract = AccBuddy::default();
         contract.set_greeting("howdy".to_string());
         assert_eq!(
             contract.get_greeting(),

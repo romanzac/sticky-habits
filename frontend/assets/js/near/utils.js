@@ -18,9 +18,9 @@ export async function initContract() {
   // Initializing our contract APIs by contract name and configuration
   window.contract = await new Contract(window.walletConnection.account(), nearConfig.contractName, {
     // View methods are read only. They don't modify the state, but usually return some value.
-    viewMethods: ['get_greeting'],
+    viewMethods: ['get_habits'],
     // Change methods can modify the state. But you don't receive the returned value when called.
-    changeMethods: ['set_greeting', 'add_action'],
+    changeMethods: ['add_habit'],
   })
 }
 
@@ -38,21 +38,21 @@ export function login() {
   window.walletConnection.requestSignIn(nearConfig.contractName)
 }
 
-export async function set_greeting(message){
-  let response = await window.contract.set_greeting({
-    args:{message: message}
+export async function set_habits(habit){
+  let response = await window.contract.set_habits({
+    args:{habits: habits}
   })
   return response
 }
 
-export async function get_greeting(){
-  let greeting = await window.contract.get_greeting()
-  return greeting
+export async function get_habits(){
+  let habits = await window.contract.get_habits()
+  return habits
 }
 
-export async function add_action(action, deadline, penalty, beneficiary){
-  let response = await window.contract.add_action({
-    args:{action: action, deadline: deadline, penalty: penalty, beneficiary: beneficiary}
+export async function add_habit(habit, deadline, penalty, beneficiary){
+  let response = await window.contract.add_habit({
+    args:{habit: habit, deadline: deadline, penalty: penalty, beneficiary: beneficiary}
   })
   return response
 }

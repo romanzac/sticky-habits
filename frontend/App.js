@@ -3,13 +3,13 @@ import React from 'react'
 
 import './assets/css/global.css'
 
-import {login, logout, get_greeting, add_action} from './assets/js/near/utils'
+import {login, logout, get_habits, add_habit} from './assets/js/near/utils'
 import getConfig from './assets/js/near/config'
 
 
 export default function App() {
-  // use React Hooks to store greeting in component state
-  const [greeting, setGreeting] = React.useState()
+  // use React Hooks to store habit in component state
+  const [habit, setHabits] = React.useState()
 
   // when the user has not yet interacted with the form, disable the button
   const [buttonDisabled, setButtonDisabled] = React.useState(true)
@@ -22,9 +22,9 @@ export default function App() {
   React.useEffect(
     () => {
       // get_greeting is in near/utils.js
-      get_greeting()
-        .then(greetingFromContract => {
-          setGreeting(greetingFromContract)
+      get_habits()
+        .then(habitsFromContract => {
+          setHabits(habitsFromContract)
         })
     },
 
@@ -46,7 +46,7 @@ export default function App() {
         rid of the old one ?
         </p>
         <p>
-        Habits are built by actions we keep doing for at least 21 days. I will remember all actions you set.
+        Habits are built when we keep going for at least 21 days. I will remember all habits you set.
             Give you feedback and make sure you progress with ease.
         </p>
         <p style={{ textAlign: 'center', marginTop: '2.5em' }}>
@@ -72,7 +72,7 @@ export default function App() {
         </p>
           <table style={{ width: '150%' }}>
               <tr>
-                  <th>Action</th>
+                  <th>Habit</th>
                   <th>Deadline</th>
                   <th>Penalty</th>
                   <th>Give to</th>
@@ -94,10 +94,10 @@ export default function App() {
               event.preventDefault()
 
               // get elements from the form using their id attribute
-              const { fieldset, action, deadline, penalty, beneficiary } = event.target.elements
+              const { fieldset, habit, deadline, penalty, beneficiary } = event.target.elements
 
               // hold onto new user-entered values from React's SynthenticEvent for use after `await` call
-              const newAction = action.value
+              const newHabit = habit.value
               const newDeadline = deadline.value
               const newPenalty = penalty.value
               const newBeneficiary = beneficiary.value
@@ -108,7 +108,7 @@ export default function App() {
               try {
                   // make an update call to the smart contract
                   // pass the value that the user entered in the greeting field
-                  await add_action(newAction, newDeadline, newPenalty, newBeneficiary)
+                  await add_habit(newHabit, newDeadline, newPenalty, newBeneficiary)
               } catch (e) {
                   alert(
                       'Something went wrong! ' +
@@ -122,7 +122,7 @@ export default function App() {
               }
 
               // update local `greeting` variable to match persisted value
-              setGreeting(newGreeting)
+              setHabits(newHabit)
 
               // show Notification
               setShowNotification(true)
@@ -147,8 +147,8 @@ export default function App() {
                       <input
                           autoComplete="off"
                           defaultValue="Go to gym "
-                          id="action"
-                          onChange={e => setButtonDisabled(e.target.value === action)}
+                          id="habit"
+                          onChange={e => setButtonDisabled(e.target.value === habit)}
                           style={{ flex: 1 }}
                       />
                       <input
@@ -176,7 +176,7 @@ export default function App() {
                           disabled={buttonDisabled}
                           style={{ borderRadius: '0 5px 5px 0' }}
                       >
-                          Add New Action
+                          Add New Habit
                       </button>
                   </div>
               </fieldset>
