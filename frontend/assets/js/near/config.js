@@ -35,9 +35,9 @@ function getConfig(env) {
   case 'local':
     return {
       networkId: process.env.NEAR_CLI_LOCALNET_NETWORK_ID || 'local',
-      nodeUrl: process.env.NEAR_NODE_URL || 'http://localhost:3030',
+      nodeUrl: process.env.NEAR_NODE_URL || 'http://localhost:8332',
       keyPath: process.env.NEAR_CLI_LOCALNET_KEY_PATH || `${process.env.HOME}/.near/validator_key.json`,
-      walletUrl: process.env.NEAR_WALLET_URL || 'http://localhost:4000/wallet',
+      walletUrl: process.env.NEAR_WALLET_URL || 'http://localhost:8334',
       contractName: CONTRACT_NAME,
     };
   case 'test':

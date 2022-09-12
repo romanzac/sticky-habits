@@ -7,37 +7,41 @@
  */
 
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::{log, near_bindgen};
+use near_sdk::serde::Serialize;
+use near_sdk::{env, AccountId, Balance, near_bindgen};
+use near_sdk::collections::{Vector};
+use near_sdk::json_types::{U128};
 
 // Define the default message
 const DEFAULT_MESSAGE: &str = "Hello";
 
-#[derive(BorshSerialize, BorshStorageKey)]
-struct Action {
+#[near_bindgen]
+#[derive(BorshDeserialize, BorshSerialize, Serialize)]
+#[serde(crate = "near_sdk::serde")]
+pub struct Action {
     description: String,
     deadline: String,
     penalty: String,
     beneficiary: String
 }
 
-// Define the contract structure
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize)]
-pub struct Contract {
-    message: String,
-    actions: Vec<Action>
+pub struct AccBuddy {
+    actions: Vector<Action>,
 }
 
+
 // Define the default, which automatically initializes the contract
-impl Default for Contract{
+impl Default for AccBuddy{
     fn default() -> Self{
-        Self{message: DEFAULT_MESSAGE.to_string(), actions: vec![] }
+        Self{ actions: Vector::new() }
     }
 }
 
 // Implement the contract structure
 #[near_bindgen]
-impl Contract {
+impl AccBuddy {
     // Public method - returns the greeting saved, defaulting to DEFAULT_MESSAGE
     pub fn get_greeting(&self) -> String {
         return self.message.clone();
