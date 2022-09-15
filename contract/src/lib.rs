@@ -9,8 +9,10 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::serde::Serialize;
 use near_sdk::{env, AccountId, Balance, near_bindgen, log, Promise};
-use near_sdk::collections::{Vector};
+use near_sdk::collections::{UnorderedMap, Vector};
 use near_sdk::json_types::{U128};
+
+pub const STORAGE_COST: u128 = 1_000_000_000_000_000_000_000;
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, Serialize)]
@@ -18,7 +20,7 @@ use near_sdk::json_types::{U128};
 pub struct Habit {
     description: String,
     deadline: u64,
-    penalty: Balance,
+    deposit: u128,
     beneficiary: AccountId,
     evidence: String
 }
@@ -26,14 +28,17 @@ pub struct Habit {
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct StickyHabits {
-    habits: Vector<Habit>,
+    owner: AccountId,
+    habits: UnorderedMap<AccountId, Vector<Habit>>,
 }
 
 
 // Define the default, which automatically initializes the contract
 impl Default for StickyHabits {
     fn default() -> Self{
-        Self{ habits: Vector::new(b"m") }
+        Self{
+            owner: env::current_account_id(),
+            habits: UnorderedMap::new(b"d") }
     }
 }
 
@@ -41,11 +46,16 @@ impl Default for StickyHabits {
 #[near_bindgen]
 impl StickyHabits {
 
-    // Returns an array of habits.
-    pub fn get_habits(&self, from_index:Option<U128>, limit:Option<u64>) -> Vec<Habit> {
+    // Returns an array of habits for the user with from and limit parameters.
+    pub fn get_habits(&self, user: AccountId, from_index:Option<U128>, limit:Option<u64>) -> Vec<Habit> {
         let from = u128::from(from_index.unwrap_or(U128(0)));
 
-        self.habits.iter()
+        let existing_habits = match self.habits.get(&user) {
+            Some(v) => v,
+            None => Vector::new(b"m"),
+        };
+
+        existing_habits.iter()
             .skip(from as usize)
             .take(limit.unwrap_or(7) as usize)
             .collect()
@@ -53,28 +63,60 @@ impl StickyHabits {
 
     // Adds new habit
     #[payable]
-    pub fn add_habit(&mut self, description: String, deadline: u64, penalty: Balance,
+    pub fn add_habit(&mut self, description: String, deadline: u64, deposit: u128,
                      beneficiary: AccountId, evidence: String) {
-        if self.habits.len() < 7 {
             log!("Adding new habit {}", description);
-            self.habits.push(&Habit{ description, deadline, penalty,
-                beneficiary, evidence });
-        } else {
-            log!("Only 7 habits are supported at the same time");
-        }
+            // Get who is calling the method and how much $NEAR they attached
+            let user: AccountId = env::predecessor_account_id();
+            let amount_to_lock: Balance = env::attached_deposit();
+
+            // Check if user has already any stored habits
+            let mut existing_habits = match self.habits.get(&user) {
+                Some(i) => i,
+                None => Vector::new(b"m"),
+            };
+
+            if amount_to_lock == deposit {
+                let to_lock: Balance = if existing_habits.len() == 0 {
+                    // This is the user's first deposit, lets register it, which increases storage
+                    assert!(amount_to_lock > STORAGE_COST, "Attach at least {} yoctoNEAR", STORAGE_COST);
+
+                    // Subtract the storage cost to the amount to transfer
+                    amount_to_lock - STORAGE_COST
+                } else {
+                    amount_to_lock
+                };
+
+                existing_habits.push(&Habit{
+                    description: description.clone(),
+                    deadline,
+                    deposit: to_lock,
+                    beneficiary,
+                    evidence });
+
+                self.habits.insert(&user, &existing_habits);
+                // Send the money to the beneficiary
+
+                Promise::new(self.owner.clone()).transfer(to_lock.clone());
+                log!("Deposit of {} has been made for habit {}!", to_lock, description);
+
+            } else {
+                log!("Money sent doesn't match intended deposit value");
+            }
+
+
+
     }
 
     // TODO: implement lock by user and unlock by his friend
-    // How about evidence screenshot or selfie for the friend
-    // 1) user locks to smart contract
-    // 2) user does the thing and gathers evidence
-    // 3) both user and friend should approve it was or wasn't done.
-    //    If both agree it was done, user receives money back,
-    //    if both agree it wasn't dont, friend receives money back and
-    //    if they cannot agree, developer gets money :)
-    pub fn transfer(&self, to: AccountId, amount: Balance) {
-        Promise::new(to).transfer(amount);
-    }
+    // 1) user locks the deposit
+    // 2) user keeps doing the habit and gathers evidence until deadline
+    // 3) both user and friend should approve habit was or wasn't done.
+    //    if both agree it was done, user receives money back - deposit is unlocked,
+    //    if both agree it wasn't done, friend receives the deposit,
+    //    if they cannot agree, smart contract (developer) receives the deposit after grace period :)
+
+
 }
 
 /*
@@ -94,13 +136,13 @@ mod tests {
             "Clean my keyboard once a week".to_string(),
             1664553599000000000,
             Balance::from(50u32),
-            AccountId::from_str("b3b3bccd6ceee15c1610421568a03b5dcff6d1672374840d4da2c38c15ba0109").unwrap(),
+            AccountId::from_str("joe.near").unwrap(),
             "http://www.icloud.com/myfile.mov".to_string(),
         );
 
         let posted_habit = &contract.get_habits(None, None)[0];
         assert_eq!(posted_habit.description, "Clean my keyboard once a week".to_string());
-        assert_eq!(posted_habit.penalty, Balance::from(50u32));
+        assert_eq!(posted_habit.deposit, Balance::from(50u32));
     }
 
     #[test]
@@ -124,7 +166,7 @@ mod tests {
             "Exercise without smartphone".to_string(),
             1664553599000000002,
             Balance::from(3000u32),
-            AccountId::from_str("b3b3bccd6ceee15c1610421568a03b5dcff6d1672374840d4da2c38c15ba1236").unwrap(),
+            AccountId::from_str("roman.near").unwrap(),
             "http://www.icloud.com/myfile3.mov".to_string(),
         );
 
@@ -134,7 +176,7 @@ mod tests {
 
         let last_habit = &contract.get_habits(Some(U128::from(1)), Some(2))[1];
         assert_eq!(last_habit.deadline, 1664553599000000002);
-        assert_eq!(last_habit.beneficiary, AccountId::from_str("b3b3bccd6ceee15c1610421568a03b5dcff6d1672374840d4da2c38c15ba1236").unwrap());
+        assert_eq!(last_habit.beneficiary, AccountId::from_str("roman.near").unwrap());
     }
 }
 
