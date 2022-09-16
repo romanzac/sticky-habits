@@ -10,7 +10,7 @@ use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::serde::Serialize;
 use near_sdk::{env, AccountId, Balance, near_bindgen, log, Promise};
 use near_sdk::collections::{UnorderedMap, Vector};
-use near_sdk::json_types::{U128};
+use near_sdk::json_types::{U128, U64};
 
 pub const STORAGE_COST: u128 = 1_000_000_000_000_000_000_000;
 
@@ -19,32 +19,34 @@ pub const STORAGE_COST: u128 = 1_000_000_000_000_000_000_000;
 #[serde(crate = "near_sdk::serde")]
 pub struct Habit {
     description: String,
-    deadline: u64,
-    deposit: u128,
+    deadline: U64,
+    deposit: U128,
     beneficiary: AccountId,
     evidence: String
 }
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize)]
-pub struct StickyHabits {
+pub struct StickyHabitsContract {
     owner: AccountId,
+    balance: Balance,
     habits: UnorderedMap<AccountId, Vector<Habit>>,
 }
 
 
 // Define the default, which automatically initializes the contract
-impl Default for StickyHabits {
+impl Default for StickyHabitsContract {
     fn default() -> Self{
         Self{
             owner: env::current_account_id(),
+            balance: Balance::from(U128(0)),
             habits: UnorderedMap::new(b"d") }
     }
 }
 
 // Implement the contract structure
 #[near_bindgen]
-impl StickyHabits {
+impl StickyHabitsContract {
 
     // Returns an array of habits for the user with from and limit parameters.
     pub fn get_habits(&self, user: AccountId, from_index:Option<U128>, limit:Option<u64>) -> Vec<Habit> {
@@ -63,12 +65,12 @@ impl StickyHabits {
 
     // Adds new habit
     #[payable]
-    pub fn add_habit(&mut self, description: String, deadline: u64, deposit: u128,
-                     beneficiary: AccountId, evidence: String) {
+    pub fn add_habit(&mut self, description: String, deadline: U64, beneficiary: AccountId,
+                     evidence: String) {
             log!("Adding new habit {}", description);
             // Get who is calling the method and how much $NEAR they attached
             let user: AccountId = env::predecessor_account_id();
-            let amount_to_lock: Balance = env::attached_deposit();
+            let deposit: Balance = env::attached_deposit();
 
             // Check if user has already any stored habits
             let mut existing_habits = match self.habits.get(&user) {
@@ -76,35 +78,27 @@ impl StickyHabits {
                 None => Vector::new(b"m"),
             };
 
-            if amount_to_lock == deposit {
-                let to_lock: Balance = if existing_habits.len() == 0 {
-                    // This is the user's first deposit, lets register it, which increases storage
-                    assert!(amount_to_lock > STORAGE_COST, "Attach at least {} yoctoNEAR", STORAGE_COST);
+            let to_lock: Balance = if existing_habits.len() == 0 {
+                 // This is the user's first deposit, lets register it, which increases storage
+                 assert!(deposit > STORAGE_COST, "Attach at least {} yoctoNEAR", STORAGE_COST);
 
-                    // Subtract the storage cost to the amount to transfer
-                    amount_to_lock - STORAGE_COST
-                } else {
-                    amount_to_lock
-                };
-
-                existing_habits.push(&Habit{
-                    description: description.clone(),
-                    deadline,
-                    deposit: to_lock,
-                    beneficiary,
-                    evidence });
-
-                self.habits.insert(&user, &existing_habits);
-                // Send the money to the beneficiary
-
-                Promise::new(self.owner.clone()).transfer(to_lock.clone());
-                log!("Deposit of {} has been made for habit {}!", to_lock, description);
-
+                // Subtract the storage cost to the amount to transfer
+                deposit - STORAGE_COST
             } else {
-                log!("Money sent doesn't match intended deposit value");
-            }
+                deposit
+            };
 
+            existing_habits.push(&Habit{
+                description: description.clone(),
+                deadline,
+                deposit: U128::from(to_lock),
+                beneficiary,
+                evidence });
 
+            self.habits.insert(&user, &existing_habits);
+            self.balance += Balance::from(to_lock);
+
+            log!("Deposit of {} has been made for habit {}!", to_lock, description);
 
     }
 
@@ -131,11 +125,10 @@ mod tests {
 
     #[test]
     fn add_habit() {
-        let mut contract = StickyHabits::default();
+        let mut contract = StickyHabitsContract::default();
         contract.add_habit(
             "Clean my keyboard once a week".to_string(),
-            1664553599000000000,
-            Balance::from(50u32),
+            U64(1664553599000000000),
             AccountId::from_str("joe.near").unwrap(),
             "http://www.icloud.com/myfile.mov".to_string(),
         );
@@ -147,7 +140,7 @@ mod tests {
 
     #[test]
     fn iterates_habits() {
-        let mut contract = StickyHabits::default();
+        let mut contract = StickyHabitsContract::default();
         contract.add_habit(
             "Clean my keyboard once a week".to_string(),
             1664553599000000000,
