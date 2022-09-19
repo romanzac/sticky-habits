@@ -36,8 +36,8 @@ pub struct StickyHabitsContract {
 
 // Define the default, which automatically initializes the contract
 impl Default for StickyHabitsContract {
-    fn default() -> Self{
-        Self{
+    fn default() -> Self {
+        Self {
             owner: env::current_account_id(),
             balance: Balance::from(U128(0)),
             habits: UnorderedMap::new(b"d") }
@@ -47,6 +47,13 @@ impl Default for StickyHabitsContract {
 // Implement the contract structure
 #[near_bindgen]
 impl StickyHabitsContract {
+    pub fn init(owner: AccountId) -> Self {
+        assert!(!env::state_exists(), "Already initialized");
+        Self {
+            owner,
+            balance: Balance::from(U128(0)),
+            habits: UnorderedMap::new(b"d") }
+    }
 
     // Returns an array of habits for the user with from and limit parameters.
     pub fn get_habits(&self, user: AccountId, from_index:Option<U128>, limit:Option<u64>) -> Vec<Habit> {
@@ -121,55 +128,82 @@ impl StickyHabitsContract {
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
+    use near_sdk::testing_env;
+    use near_sdk::test_utils::VMContextBuilder;
+    use near_sdk::Balance;
     use super::*;
+
+    const OWNER: &str = "joe";
+    const NEAR: u128 = 1000000000000000000000000;
+
+    // Auxiliar fn: create a mock context
+    fn set_context(predecessor: &str, amount: Balance) {
+        let mut builder = VMContextBuilder::new();
+        builder.predecessor_account_id(predecessor.parse().unwrap());
+        builder.attached_deposit(amount);
+
+        testing_env!(builder.build());
+    }
+
+    #[test]
+    fn initializes() {
+        let contract = StickyHabitsContract::init(OWNER.parse().unwrap());
+        assert_eq!(contract.owner, OWNER.parse().unwrap())
+    }
 
     #[test]
     fn add_habit() {
         let mut contract = StickyHabitsContract::default();
+
+        set_context("roman", 10*NEAR);
         contract.add_habit(
             "Clean my keyboard once a week".to_string(),
             U64(1664553599000000000),
-            AccountId::from_str("joe.near").unwrap(),
+            AccountId::from_str("adam").unwrap(),
             "http://www.icloud.com/myfile.mov".to_string(),
         );
 
-        let posted_habit = &contract.get_habits(None, None)[0];
+        let posted_habit = &contract.get_habits(AccountId::from_str("roman").unwrap(),None, None)[0];
         assert_eq!(posted_habit.description, "Clean my keyboard once a week".to_string());
-        assert_eq!(posted_habit.deposit, Balance::from(50u32));
+        assert_eq!(posted_habit.deposit, U128(10*NEAR-STORAGE_COST));
     }
 
     #[test]
     fn iterates_habits() {
         let mut contract = StickyHabitsContract::default();
+
+        set_context("roman", 20*NEAR);
         contract.add_habit(
             "Clean my keyboard once a week".to_string(),
-            1664553599000000000,
-            Balance::from(50u32),
-            AccountId::from_str("b3b3bccd6ceee15c1610421568a03b5dcff6d1672374840d4da2c38c15ba1234").unwrap(),
-            "http://www.icloud.com/myfile.mov".to_string(),
+            U64(1664553599000000000),
+            AccountId::from_str("josef").unwrap(),
+            "https://www.icloud.com/myfile.mov".to_string(),
         );
+
+        set_context("roman", 20*NEAR);
         contract.add_habit(
-            "Eat two tomato every day".to_string(),
-            1664553599000000001,
-            Balance::from(150u32),
+            "Eat two tomatoes every day".to_string(),
+            U64(1664553599000000001),
             AccountId::from_str("b3b3bccd6ceee15c1610421568a03b5dcff6d1672374840d4da2c38c15ba1235").unwrap(),
-            "http://www.icloud.com/myfile2.mov".to_string(),
+            "https://www.icloud.com/myfile2.mov".to_string(),
         );
+        set_context("roman", 20*NEAR);
         contract.add_habit(
             "Exercise without smartphone".to_string(),
-            1664553599000000002,
-            Balance::from(3000u32),
-            AccountId::from_str("roman.near").unwrap(),
+            U64(1664553599000000002),
+            AccountId::from_str("alice").unwrap(),
             "http://www.icloud.com/myfile3.mov".to_string(),
         );
 
 
-        let habits = &contract.get_habits(None, None);
+        let habits = &contract.get_habits(AccountId::from_str("roman").unwrap(),
+                                          None, None);
         assert_eq!(habits.len(), 3);
 
-        let last_habit = &contract.get_habits(Some(U128::from(1)), Some(2))[1];
-        assert_eq!(last_habit.deadline, 1664553599000000002);
-        assert_eq!(last_habit.beneficiary, AccountId::from_str("roman.near").unwrap());
+        let last_habit = &contract.get_habits(AccountId::from_str("roman").unwrap(),
+                                              Some(U128::from(1)), Some(2))[1];
+        assert_eq!(last_habit.deadline, U64(1664553599000000002));
+        assert_eq!(last_habit.beneficiary, AccountId::from_str("alice").unwrap());
     }
 }
 
