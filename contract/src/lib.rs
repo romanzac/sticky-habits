@@ -22,7 +22,9 @@ pub struct Habit {
     deadline: U64,
     deposit: U128,
     beneficiary: AccountId,
-    evidence: String
+    evidence: String,
+    approved_user: bool,
+    approved_beneficiary: bool
 }
 
 #[near_bindgen]
@@ -30,6 +32,8 @@ pub struct Habit {
 pub struct StickyHabitsContract {
     owner: AccountId,
     balance: Balance,
+    habit_acquisition_period: u16, // Days
+    approval_grace_period: u16,    // Days
     habits: UnorderedMap<AccountId, Vector<Habit>>,
 }
 
@@ -40,6 +44,8 @@ impl Default for StickyHabitsContract {
         Self {
             owner: env::current_account_id(),
             balance: Balance::from(U128(0)),
+            habit_acquisition_period: 21,
+            approval_grace_period: 30,
             habits: UnorderedMap::new(b"d") }
     }
 }
@@ -47,11 +53,13 @@ impl Default for StickyHabitsContract {
 // Implement the contract structure
 #[near_bindgen]
 impl StickyHabitsContract {
-    pub fn init(owner: AccountId) -> Self {
+    pub fn init(owner: AccountId, habit_acquisition_period: u16, approval_grace_period: u16) -> Self {
         assert!(!env::state_exists(), "Already initialized");
         Self {
             owner,
             balance: Balance::from(U128(0)),
+            habit_acquisition_period,
+            approval_grace_period,
             habits: UnorderedMap::new(b"d") }
     }
 
@@ -100,7 +108,10 @@ impl StickyHabitsContract {
                 deadline,
                 deposit: U128::from(to_lock),
                 beneficiary,
-                evidence });
+                evidence,
+                approved_user: true,
+                approved_beneficiary: false
+            });
 
             self.habits.insert(&user, &existing_habits);
             self.balance += Balance::from(to_lock);
@@ -108,6 +119,32 @@ impl StickyHabitsContract {
             log!("Deposit of {} has been made for habit {}!", to_lock, description);
 
     }
+
+    #[payable]
+    pub fn unlock_deposit(&mut self, user: AccountId, description: String, from_index:Option<U128>) -> Promise {
+        let limit = Some(0);
+        Promise::new(user)
+    }
+
+    #[payable]
+    pub fn update_evidence(&mut self, user: AccountId, description: String, from_index:Option<U128>,
+                        evidence: String) {
+        let limit = Some(0);
+
+    }
+
+    #[payable]
+    pub fn approve_result_user(&mut self, user: AccountId, beneficiary: AccountId, description: String,
+                          from_index:Option<U128>, approved: bool) {
+        let limit = Some(0);
+    }
+
+    #[payable]
+    pub fn approve_result_beneficiary(&mut self, user: AccountId, beneficiary: AccountId, description: String,
+                               from_index:Option<U128>, approved: bool) {
+        let limit = Some(0);
+    }
+
 
     // TODO: implement lock by user and unlock by his friend
     // 1) user locks the deposit
@@ -147,7 +184,8 @@ mod tests {
 
     #[test]
     fn initializes() {
-        let contract = StickyHabitsContract::init(OWNER.parse().unwrap());
+        let contract = StickyHabitsContract::init(OWNER.parse().unwrap(),
+                                                  66, 30);
         assert_eq!(contract.owner, OWNER.parse().unwrap())
     }
 
@@ -204,6 +242,8 @@ mod tests {
                                               Some(U128::from(1)), Some(2))[1];
         assert_eq!(last_habit.deadline, U64(1664553599000000002));
         assert_eq!(last_habit.beneficiary, AccountId::from_str("alice").unwrap());
+        assert_eq!(last_habit.approved_user, true);
+        assert_eq!(last_habit.approved_beneficiary, false);
     }
 }
 
