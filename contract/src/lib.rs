@@ -44,7 +44,7 @@ impl Default for StickyHabitsContract {
             owner: env::current_account_id(),
             balance: Balance::from(U128(0)),
             habit_acquisition_period: 21,
-            approval_grace_period: 30,
+            approval_grace_period: 15,
             habits: UnorderedMap::new(b"d") }
     }
 }
@@ -79,8 +79,7 @@ impl StickyHabitsContract {
 
     // Adds new habit
     #[payable]
-    pub fn add_habit(&mut self, description: String, deadline: U64, beneficiary: AccountId,
-                     evidence: String) {
+    pub fn add_habit(&mut self, description: String, deadline: U64, beneficiary: AccountId) {
             log!("Adding new habit {}", description);
             // Get who is calling the method and how much $NEAR they attached
             let user: AccountId = env::predecessor_account_id();
@@ -107,7 +106,7 @@ impl StickyHabitsContract {
                 deadline,
                 deposit: U128::from(to_lock),
                 beneficiary,
-                evidence,
+                evidence: "".to_string(),
                 approved: false
             });
 
@@ -119,16 +118,24 @@ impl StickyHabitsContract {
     }
 
     #[payable]
-    pub fn unlock_deposit(&mut self, user: AccountId, description: String, from_index:Option<U128>) -> Promise {
-        let limit = Some(0);
-        Promise::new(user)
-    }
+    pub fn update_evidence(&mut self, index: u64, evidence: String) {
+        let user: AccountId = env::predecessor_account_id();
 
-    #[payable]
-    pub fn update_evidence(&mut self, user: AccountId, description: String, from_index:Option<U128>,
-                        evidence: String) {
-        let limit = Some(0);
+        log!("Updating habit evidence for user {}", user);
 
+        let mut existing_habits = match self.habits.get(&user) {
+            Some(v) => v,
+            None => Vector::new(b"m"),
+        };
+        if existing_habits.len() > index {
+            match &mut existing_habits.get(index) {
+                Some(habit) => {
+                    habit.evidence = evidence;
+                    let evicted = existing_habits.replace(index, habit);
+                },
+                None => (),
+            };
+        }
     }
 
     #[payable]
@@ -137,6 +144,11 @@ impl StickyHabitsContract {
         let limit = Some(0);
     }
 
+    #[payable]
+    pub fn unlock_deposit(&mut self, user: AccountId, description: String, from_index:Option<U128>) -> Promise {
+        let limit = Some(0);
+        Promise::new(user)
+    }
 
     // TODO: implement lock by user and unlock by his friend
     // 1) user locks the deposit
@@ -188,13 +200,37 @@ mod tests {
         contract.add_habit(
             "Clean my keyboard once a week".to_string(),
             U64(1664553599000000000),
-            AccountId::from_str("adam").unwrap(),
-            "http://www.icloud.com/myfile.mov".to_string(),
+            AccountId::from_str("adam").unwrap()
         );
 
         let posted_habit = &contract.get_habits(AccountId::from_str("roman").unwrap(),None, None)[0];
         assert_eq!(posted_habit.description, "Clean my keyboard once a week".to_string());
         assert_eq!(posted_habit.deposit, U128(10*NEAR-STORAGE_COST));
+    }
+
+    #[test]
+    fn update_evidence() {
+        let mut contract = StickyHabitsContract::default();
+
+        set_context("roman", 10*NEAR);
+        contract.add_habit(
+            "Clean my keyboard once a week".to_string(),
+            U64(1664553599000000000),
+            AccountId::from_str("adam").unwrap()
+        );
+
+        set_context("roman", 10*NEAR);
+        contract.add_habit(
+            "Wake up every day at the same time".to_string(),
+            U64(1664553599000000012),
+            AccountId::from_str("maria").unwrap()
+        );
+
+        contract.update_evidence(1,"https://www.icloud.com/myfile.mov".to_string());
+
+        let updated_habit = &contract.get_habits(AccountId::from_str("roman").unwrap(),None, None)[1];
+        assert_eq!(updated_habit.evidence, "https://www.icloud.com/myfile.mov".to_string());
+
     }
 
     #[test]
@@ -205,25 +241,22 @@ mod tests {
         contract.add_habit(
             "Clean my keyboard once a week".to_string(),
             U64(1664553599000000000),
-            AccountId::from_str("josef").unwrap(),
-            "https://www.icloud.com/myfile.mov".to_string(),
+            AccountId::from_str("josef").unwrap()
         );
 
         set_context("roman", 20*NEAR);
         contract.add_habit(
             "Eat two tomatoes every day".to_string(),
             U64(1664553599000000001),
-            AccountId::from_str("b3b3bccd6ceee15c1610421568a03b5dcff6d1672374840d4da2c38c15ba1235").unwrap(),
-            "https://www.icloud.com/myfile2.mov".to_string(),
+            AccountId::from_str("b3b3bccd6ceee15c1610421568a03b5dcff6d1672374840d4da2c38c15ba1235").unwrap()
         );
+
         set_context("roman", 20*NEAR);
         contract.add_habit(
             "Exercise without smartphone".to_string(),
             U64(1664553599000000002),
-            AccountId::from_str("alice").unwrap(),
-            "http://www.icloud.com/myfile3.mov".to_string(),
+            AccountId::from_str("alice").unwrap()
         );
-
 
         let habits = &contract.get_habits(AccountId::from_str("roman").unwrap(),
                                           None, None);
