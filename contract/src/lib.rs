@@ -23,8 +23,7 @@ pub struct Habit {
     deposit: U128,
     beneficiary: AccountId,
     evidence: String,
-    approved_user: bool,
-    approved_beneficiary: bool
+    approved: bool
 }
 
 #[near_bindgen]
@@ -109,8 +108,7 @@ impl StickyHabitsContract {
                 deposit: U128::from(to_lock),
                 beneficiary,
                 evidence,
-                approved_user: true,
-                approved_beneficiary: false
+                approved: false
             });
 
             self.habits.insert(&user, &existing_habits);
@@ -134,13 +132,7 @@ impl StickyHabitsContract {
     }
 
     #[payable]
-    pub fn approve_result_user(&mut self, user: AccountId, beneficiary: AccountId, description: String,
-                          from_index:Option<U128>, approved: bool) {
-        let limit = Some(0);
-    }
-
-    #[payable]
-    pub fn approve_result_beneficiary(&mut self, user: AccountId, beneficiary: AccountId, description: String,
+    pub fn approve_result(&mut self, user: AccountId, beneficiary: AccountId, description: String,
                                from_index:Option<U128>, approved: bool) {
         let limit = Some(0);
     }
@@ -149,10 +141,9 @@ impl StickyHabitsContract {
     // TODO: implement lock by user and unlock by his friend
     // 1) user locks the deposit
     // 2) user keeps doing the habit and gathers evidence until deadline
-    // 3) both user and friend should approve habit was or wasn't done.
-    //    if both agree it was done, user receives money back - deposit is unlocked,
-    //    if both agree it wasn't done, friend receives the deposit,
-    //    if they cannot agree, smart contract (developer) receives the deposit after grace period :)
+    // 3) friend should approve habit was or wasn't done.
+    //    if friend agrees it was done, user receives money back - deposit is unlocked,
+    //    if friend disagrees it was done, friend receives the deposit minus the fee for smart contract :)
 
 
 }
@@ -242,8 +233,7 @@ mod tests {
                                               Some(U128::from(1)), Some(2))[1];
         assert_eq!(last_habit.deadline, U64(1664553599000000002));
         assert_eq!(last_habit.beneficiary, AccountId::from_str("alice").unwrap());
-        assert_eq!(last_habit.approved_user, true);
-        assert_eq!(last_habit.approved_beneficiary, false);
+        assert_eq!(last_habit.approved, false);
     }
 }
 
