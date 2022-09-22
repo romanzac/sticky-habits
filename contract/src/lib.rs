@@ -19,8 +19,8 @@ pub const STORAGE_COST: u128 = 1_000_000_000_000_000_000_000;
 #[serde(crate = "near_sdk::serde")]
 pub struct Habit {
     description: String,
-    deadline: U64,
-    deposit: U128,
+    deadline: u64,
+    deposit: u128,
     beneficiary: AccountId,
     evidence: String,
     approved: bool
@@ -31,8 +31,8 @@ pub struct Habit {
 pub struct StickyHabitsContract {
     owner: AccountId,
     balance: Balance,
-    habit_acquisition_period: u16, // Days
-    approval_grace_period: u16,    // Days
+    habit_acquisition_period: u64, // Nanoseconds
+    approval_grace_period: u64,    // Nanoseconds
     habits: UnorderedMap<AccountId, Vector<Habit>>,
 }
 
@@ -43,8 +43,8 @@ impl Default for StickyHabitsContract {
         Self {
             owner: env::current_account_id(),
             balance: Balance::from(U128(0)),
-            habit_acquisition_period: 21,
-            approval_grace_period: 15,
+            habit_acquisition_period: 21*24*3600*1000000000 as u64,
+            approval_grace_period: 15*24*3600*1000000000 as u64,
             habits: UnorderedMap::new(b"d") }
     }
 }
@@ -52,7 +52,7 @@ impl Default for StickyHabitsContract {
 // Implement the contract structure
 #[near_bindgen]
 impl StickyHabitsContract {
-    pub fn init(owner: AccountId, habit_acquisition_period: u16, approval_grace_period: u16) -> Self {
+    pub fn init(owner: AccountId, habit_acquisition_period: u64, approval_grace_period: u64) -> Self {
         assert!(!env::state_exists(), "Already initialized");
         Self {
             owner,
@@ -103,8 +103,8 @@ impl StickyHabitsContract {
 
             existing_habits.push(&Habit{
                 description: description.clone(),
-                deadline,
-                deposit: U128::from(to_lock),
+                deadline: u64::from(deadline),
+                deposit: to_lock,
                 beneficiary,
                 evidence: "".to_string(),
                 approved: false
@@ -138,10 +138,29 @@ impl StickyHabitsContract {
         }
     }
 
+    // Beneficiary sets habit's flag to approved
     #[payable]
-    pub fn approve_result(&mut self, user: AccountId, beneficiary: AccountId, description: String,
-                               from_index:Option<U128>, approved: bool) {
-        let limit = Some(0);
+    pub fn approve_result(&mut self, user: AccountId, index: u64) {
+        let beneficiary: AccountId = env::predecessor_account_id();
+        let current_time = env::block_timestamp();
+
+        let mut existing_habits = match self.habits.get(&user) {
+            Some(v) => v,
+            None => Vector::new(b"m"),
+        };
+        if existing_habits.len() > index {
+            match &mut existing_habits.get(index) {
+                Some(habit) => {
+                    if habit.beneficiary == beneficiary &&
+                       habit.deadline < current_time &&
+                       habit.deadline + self.approval_grace_period > current_time {
+                            habit.approved = true;
+                            let evicted = existing_habits.replace(index, habit);
+                    }
+                },
+                None => (),
+            };
+        }
     }
 
     #[payable]
@@ -150,7 +169,7 @@ impl StickyHabitsContract {
         Promise::new(user)
     }
 
-    // TODO: implement lock by user and unlock by his friend
+    // TODO: implement lock by user and approve by his friend
     // 1) user locks the deposit
     // 2) user keeps doing the habit and gathers evidence until deadline
     // 3) friend should approve habit was or wasn't done.
@@ -193,7 +212,7 @@ mod tests {
     }
 
     #[test]
-    fn add_habit() {
+    fn adds_habit() {
         let mut contract = StickyHabitsContract::default();
 
         set_context("roman", 10*NEAR);
@@ -205,11 +224,11 @@ mod tests {
 
         let posted_habit = &contract.get_habits(AccountId::from_str("roman").unwrap(),None, None)[0];
         assert_eq!(posted_habit.description, "Clean my keyboard once a week".to_string());
-        assert_eq!(posted_habit.deposit, U128(10*NEAR-STORAGE_COST));
+        assert_eq!(posted_habit.deposit, 10*NEAR-STORAGE_COST);
     }
 
     #[test]
-    fn update_evidence() {
+    fn updates_evidence() {
         let mut contract = StickyHabitsContract::default();
 
         set_context("roman", 10*NEAR);
@@ -264,7 +283,7 @@ mod tests {
 
         let last_habit = &contract.get_habits(AccountId::from_str("roman").unwrap(),
                                               Some(U128::from(1)), Some(2))[1];
-        assert_eq!(last_habit.deadline, U64(1664553599000000002));
+        assert_eq!(last_habit.deadline, 1664553599000000002);
         assert_eq!(last_habit.beneficiary, AccountId::from_str("alice").unwrap());
         assert_eq!(last_habit.approved, false);
     }
