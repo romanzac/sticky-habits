@@ -136,7 +136,7 @@ impl StickyHabitsContract {
             match &mut existing_habits.get(index) {
                 Some(habit) => {
                     habit.evidence = evidence;
-                    let evicted = existing_habits.replace(index, habit);
+                    let _evicted = existing_habits.replace(index, habit);
                 },
                 None => (),
             };
@@ -161,7 +161,7 @@ impl StickyHabitsContract {
                        habit.deadline < current_time &&
                        habit.deadline + self.approval_grace_period > current_time {
                             habit.approved = true;
-                            let evicted = existing_habits.replace(index, habit);
+                            let _evicted = existing_habits.replace(index, habit);
                     }
                 },
                 None => (),
@@ -238,10 +238,11 @@ mod tests {
     const NEAR: u128 = 1000000000000000000000000;
 
     // Auxiliar fn: create a mock context
-    fn set_context(predecessor: &str, amount: Balance) {
+    fn set_context(predecessor: &str, amount: Balance, timestamp: u64) {
         let mut builder = VMContextBuilder::new();
         builder.predecessor_account_id(predecessor.parse().unwrap());
         builder.attached_deposit(amount);
+        builder.block_timestamp(timestamp);
 
         testing_env!(builder.build());
     }
@@ -260,7 +261,7 @@ mod tests {
     fn adds_habit() {
         let mut contract = StickyHabitsContract::default();
 
-        set_context("roman", 10*NEAR);
+        set_context("roman", 10*NEAR, 1664172263000000000);
         contract.add_habit(
             "Clean my keyboard once a week".to_string(),
             U64(1664553599000000000),
@@ -277,14 +278,14 @@ mod tests {
     fn updates_evidence() {
         let mut contract = StickyHabitsContract::default();
 
-        set_context("roman", 10*NEAR);
+        set_context("roman", 10*NEAR, 1664172263000000000);
         contract.add_habit(
             "Clean my keyboard once a week".to_string(),
             U64(1664553599000000000),
             AccountId::from_str("adam").unwrap()
         );
 
-        set_context("roman", 10*NEAR);
+        set_context("roman", 10*NEAR, 1664172263000000000);
         contract.add_habit(
             "Wake up every day at the same time".to_string(),
             U64(1664553599000000012),
@@ -303,21 +304,21 @@ mod tests {
     fn iterates_habits() {
         let mut contract = StickyHabitsContract::default();
 
-        set_context("roman", 20*NEAR);
+        set_context("roman", 20*NEAR, 1664172263000000000);
         contract.add_habit(
             "Clean my keyboard once a week".to_string(),
             U64(1664553599000000000),
             AccountId::from_str("josef").unwrap()
         );
 
-        set_context("roman", 20*NEAR);
+        set_context("roman", 20*NEAR, 1664172263000000000);
         contract.add_habit(
             "Eat two tomatoes every day".to_string(),
             U64(1664553599000000001),
             AccountId::from_str("b3b3bccd6ceee15c1610421568a03b5dcff6d1672374840d4da2c38c15ba1235").unwrap()
         );
 
-        set_context("roman", 20*NEAR);
+        set_context("roman", 20*NEAR, 1664172263000000000);
         contract.add_habit(
             "Exercise without smartphone".to_string(),
             U64(1664553599000000002),
@@ -334,5 +335,24 @@ mod tests {
         assert_eq!(last_habit.beneficiary, AccountId::from_str("alice").unwrap());
         assert_eq!(last_habit.approved, false);
     }
+
+    #[test]
+    pub fn unlocks_deposit() {
+        // Add habit
+        let mut contract = StickyHabitsContract::default();
+
+        set_context("roman", 20*NEAR, 1664172263000000000);
+        contract.add_habit(
+            "Do 15 push-ups everyday".to_string(),
+            U64(1664553599000000000),
+            AccountId::from_str("josef").unwrap()
+        );
+
+        // Unlock from user side
+        // Unlock from beneficiary side
+
+    }
+
+
 }
 
