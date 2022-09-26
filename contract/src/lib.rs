@@ -170,7 +170,7 @@ impl StickyHabitsContract {
     }
 
     #[payable]
-    pub fn unlock_deposit(&mut self, user: AccountId, at_index: U64) -> AccountId {
+    pub fn unlock_deposit(&mut self, user: AccountId, at_index: U64) -> String {
         let index = u64::from(at_index);
         let account: AccountId = env::predecessor_account_id();
         let current_time = env::block_timestamp();
@@ -189,7 +189,7 @@ impl StickyHabitsContract {
                         self.balance -= habit.deposit;
                         habit.deposit = 0;
                         let _evicted = existing_habits.replace(index, habit);
-                        return user;
+                        return user.to_string();
                     }
                     // Split deposit between developer and beneficiary if conditions met
                     if account == habit.beneficiary && !habit.approved &&
@@ -202,22 +202,14 @@ impl StickyHabitsContract {
                             self.balance -= habit.deposit;
                             habit.deposit = 0;
                             let _evicted = existing_habits.replace(index, habit);
-                            return account;
+                            return account.to_string();
                     }
                 },
                 None => (),
             };
         }
-        AccountId::new_unchecked("".to_string())
+        "".to_string()
     }
-
-    // TODO: implement lock by user and approve by his friend
-    // 1) user locks the deposit
-    // 2) user keeps doing the habit and gathers evidence until deadline
-    // 3) friend should approve habit was or wasn't done.
-    //    if friend agrees it was done, user receives money back - deposit is unlocked,
-    //    if friend disagrees it was done, friend receives the deposit minus the fee for smart contract :)
-
 
 }
 
@@ -348,8 +340,38 @@ mod tests {
             AccountId::from_str("josef").unwrap()
         );
 
-        // Unlock from user side
-        // Unlock from beneficiary side
+        // Failed unlock from user side - on habit not approved
+        set_context("roman", 0, 1664172263000000000);
+        let receiver = contract.unlock_deposit(AccountId::from_str("roman").unwrap(),
+                                               U64(0));
+        assert_eq!(receiver, "".to_string());
+
+
+        //  // Failed unlock from beneficiary side - on too early
+        set_context("josef", 0, 1664172260000000000);
+        let receiver = contract.unlock_deposit(AccountId::from_str("roman").unwrap(),
+                                               U64(0));
+        assert_eq!(receiver, "".to_string());
+
+        // Success unlock from user side
+        set_context("josef", 0, 1664553599000000001);
+        contract.approve_result(AccountId::from_str("roman").unwrap(), U64(0));
+        set_context("roman", 0, 1665963899000000000);
+        let receiver = contract.unlock_deposit(AccountId::from_str("roman").unwrap(),
+                                               U64(0));
+        assert_eq!(receiver, "roman".to_string());
+
+        // Success unlock from beneficiary side
+        set_context("roman", 20*NEAR, 1664172263000000000);
+        contract.add_habit(
+            "Eat vegetarian food once a day".to_string(),
+            U64(1664553599000000000),
+            AccountId::from_str("josef").unwrap()
+        );
+        set_context("josef", 0, 1665963899000000000);
+        let receiver = contract.unlock_deposit(AccountId::from_str("roman").unwrap(),
+                                               U64(1));
+        assert_eq!(receiver, "josef".to_string());
 
     }
 
