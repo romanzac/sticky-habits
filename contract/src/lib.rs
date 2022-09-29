@@ -54,6 +54,8 @@ impl Default for StickyHabitsContract {
 // Implement the contract structure
 #[near_bindgen]
 impl StickyHabitsContract {
+    #[init]
+    #[private]
     pub fn init(owner: AccountId, dev_fee: u16, habit_acquisition_period: U64, approval_grace_period: U64) -> Self {
         assert!(!env::state_exists(), "Already initialized");
         Self {
@@ -145,7 +147,7 @@ impl StickyHabitsContract {
 
     // Beneficiary sets habit's flag to approved
     #[payable]
-    pub fn approve_result(&mut self, user: AccountId, at_index: U64) {
+    pub fn approve_habit(&mut self, user: AccountId, at_index: U64) {
         let index = u64::from(at_index);
         let beneficiary: AccountId = env::predecessor_account_id();
         let current_time = env::block_timestamp();
@@ -355,7 +357,7 @@ mod tests {
 
         // Success unlock from user side
         set_context("josef", 0, 1664553599000000001);
-        contract.approve_result(AccountId::from_str("roman").unwrap(), U64(0));
+        contract.approve_habit(AccountId::from_str("roman").unwrap(), U64(0));
         set_context("roman", 0, 1665963899000000000);
         let receiver = contract.unlock_deposit(AccountId::from_str("roman").unwrap(),
                                                U64(0));
