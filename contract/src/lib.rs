@@ -86,7 +86,7 @@ impl StickyHabitsContract {
     // Adds new habit
     #[payable]
     pub fn add_habit(&mut self, description: String, deadline: U64, beneficiary: AccountId) {
-            log!("Adding new habit {}", description);
+            log!("Adding new habit: {}", description);
             // Get who is calling the method and how much $NEAR they attached
             let user: AccountId = env::predecessor_account_id();
             let deposit: Balance = env::attached_deposit();
@@ -119,7 +119,7 @@ impl StickyHabitsContract {
             self.habits.insert(&user, &existing_habits);
             self.balance += Balance::from(to_lock);
 
-            log!("Deposit of {} has been made for habit {}!", to_lock, description);
+            log!("Deposit of {} has been made for habit {}", to_lock, description);
 
     }
 
@@ -349,7 +349,7 @@ mod tests {
         assert_eq!(receiver, "".to_string());
 
 
-        //  // Failed unlock from beneficiary side - on too early
+        // Failed unlock from beneficiary side - on too early
         set_context("josef", 0, 1664172260000000000);
         let receiver = contract.unlock_deposit(AccountId::from_str("roman").unwrap(),
                                                U64(0));
