@@ -85,11 +85,13 @@ impl StickyHabitsContract {
 
     // Adds new habit
     #[payable]
-    pub fn add_habit(&mut self, description: String, deadline: U64, beneficiary: AccountId) {
+    pub fn add_habit(&mut self, description: String, deadline_extension: U64, beneficiary: AccountId) {
             log!("Adding new habit: {}", description);
             // Get who is calling the method and how much $NEAR they attached
             let user: AccountId = env::predecessor_account_id();
             let deposit: Balance = env::attached_deposit();
+            let deadline = env::block_timestamp() + self.habit_acquisition_period +
+                u64::from(deadline_extension);
 
             // Check if user has already any stored habits
             let mut existing_habits = match self.habits.get(&user) {
@@ -109,7 +111,7 @@ impl StickyHabitsContract {
 
             existing_habits.push(&Habit{
                 description: description.clone(),
-                deadline: u64::from(deadline),
+                deadline,
                 deposit: to_lock,
                 beneficiary,
                 evidence: "".to_string(),
@@ -246,8 +248,8 @@ mod tests {
         let contract = StickyHabitsContract::init(
             OWNER.parse().unwrap(),
             7,
-            U64(66),
-            U64(30));
+            U64(1*24*3600*1000000000),
+            U64(1*24*3600*1000000000));
         assert_eq!(contract.owner, OWNER.parse().unwrap())
     }
 
@@ -258,7 +260,7 @@ mod tests {
         set_context("roman", 10*NEAR, 1664172263000000000);
         contract.add_habit(
             "Clean my keyboard once a week".to_string(),
-            U64(1664553599000000000),
+            U64(0),
             AccountId::from_str("adam").unwrap()
         );
 
@@ -275,14 +277,14 @@ mod tests {
         set_context("roman", 10*NEAR, 1664172263000000000);
         contract.add_habit(
             "Clean my keyboard once a week".to_string(),
-            U64(1664553599000000000),
+            U64(0),
             AccountId::from_str("adam").unwrap()
         );
 
         set_context("roman", 10*NEAR, 1664172263000000000);
         contract.add_habit(
             "Wake up every day at the same time".to_string(),
-            U64(1664553599000000012),
+            U64(0),
             AccountId::from_str("maria").unwrap()
         );
 
@@ -301,21 +303,21 @@ mod tests {
         set_context("roman", 20*NEAR, 1664172263000000000);
         contract.add_habit(
             "Clean my keyboard once a week".to_string(),
-            U64(1664553599000000000),
+            U64(0),
             AccountId::from_str("josef").unwrap()
         );
 
         set_context("roman", 20*NEAR, 1664172263000000000);
         contract.add_habit(
             "Eat two tomatoes every day".to_string(),
-            U64(1664553599000000001),
+            U64(0),
             AccountId::from_str("b3b3bccd6ceee15c1610421568a03b5dcff6d1672374840d4da2c38c15ba1235").unwrap()
         );
 
         set_context("roman", 20*NEAR, 1664172263000000000);
         contract.add_habit(
             "Exercise without smartphone".to_string(),
-            U64(1664553599000000002),
+            U64(60000000000),
             AccountId::from_str("alice").unwrap()
         );
 
@@ -325,7 +327,7 @@ mod tests {
 
         let last_habit = &contract.get_habits(AccountId::from_str("roman").unwrap(),
                                               Some(U128(1)), Some(U64(2)))[1];
-        assert_eq!(last_habit.deadline, 1664553599000000002);
+        assert_eq!(last_habit.deadline, 1664172263000000000 + contract.habit_acquisition_period + 60000000000);
         assert_eq!(last_habit.beneficiary, AccountId::from_str("alice").unwrap());
         assert_eq!(last_habit.approved, false);
     }
@@ -335,42 +337,42 @@ mod tests {
         // Add habit
         let mut contract = StickyHabitsContract::default();
 
-        set_context("roman", 20*NEAR, 1664172263000000000);
+        set_context("roman", 20*NEAR, 1662312790000000000);
         contract.add_habit(
             "Do 15 push-ups everyday".to_string(),
-            U64(1664553599000000000),
+            U64(0),
             AccountId::from_str("josef").unwrap()
         );
 
         // Failed unlock from user side - on habit not approved
-        set_context("roman", 0, 1664172263000000000);
+        set_context("roman", 0, 1663132260000000000);
         let receiver = contract.unlock_deposit(AccountId::from_str("roman").unwrap(),
                                                U64(0));
         assert_eq!(receiver, "".to_string());
 
 
         // Failed unlock from beneficiary side - on too early
-        set_context("josef", 0, 1664172260000000000);
+        set_context("josef", 0, 1663132260000000000);
         let receiver = contract.unlock_deposit(AccountId::from_str("roman").unwrap(),
                                                U64(0));
         assert_eq!(receiver, "".to_string());
 
         // Success unlock from user side
-        set_context("josef", 0, 1664553599000000001);
+        set_context("josef", 0, 1664302901000000000);
         contract.approve_habit(AccountId::from_str("roman").unwrap(), U64(0));
-        set_context("roman", 0, 1665963899000000000);
+        set_context("roman", 0, 1665771701000000000);
         let receiver = contract.unlock_deposit(AccountId::from_str("roman").unwrap(),
                                                U64(0));
         assert_eq!(receiver, "roman".to_string());
 
         // Success unlock from beneficiary side
-        set_context("roman", 20*NEAR, 1664172263000000000);
+        set_context("roman", 20*NEAR, 1662312790000000000);
         contract.add_habit(
             "Eat vegetarian food once a day".to_string(),
-            U64(1664553599000000000),
+            U64(0),
             AccountId::from_str("josef").unwrap()
         );
-        set_context("josef", 0, 1665963899000000000);
+        set_context("josef", 0, 1665771701000000000);
         let receiver = contract.unlock_deposit(AccountId::from_str("roman").unwrap(),
                                                U64(1));
         assert_eq!(receiver, "josef".to_string());

@@ -1,3 +1,4 @@
+use std::time::{Duration, SystemTime};
 use near_units::parse_near;
 use near_sdk::json_types::{U64};
 use serde_json::json;
@@ -18,8 +19,8 @@ async fn create_sticky_habits(
         .args_json(serde_json::json!({
             "owner": owner.id(),
             "dev_fee": 5u16,
-            "habit_acquisition_period": U64(21*24*3600*1000000000),
-            "approval_grace_period": U64(1*24*3600*1000000000)
+            "habit_acquisition_period": U64(1*3600*1000000000),
+            "approval_grace_period": U64(1*3600*1000000000)
         }))
         .transact()
         .await?
@@ -35,12 +36,18 @@ async fn test_default_workflow(
     worker: &Worker<Sandbox>
 ) -> anyhow::Result<()> {
 
+    // Get actual time and 2 hours to get expected unlock time
+    let now = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
+    let unlock_t = now + Duration::from_secs(7200);
+    println!("Unlock expected at: {:?}\n", unlock_t.as_nanos());
+
+
     // Add habit
     let ah_res = user
         .call(contract.id(), "add_habit")
         .args_json(json!({
             "description": "Eat vitamin C everyday".to_string(),
-            "deadline": U64(1664553599000000000),
+            "deadline_extension": U64(0),
             "beneficiary": beneficiary.id()
             }))
         .deposit(parse_near!("10 N"))
@@ -77,14 +84,10 @@ async fn test_default_workflow(
     println!("Approve habit response: {:?}\n", ap_res);
 
     // Forward time into future
-    worker.fast_forward(150000).await?;
+    worker.fast_forward(8000).await?;
 
     let block_info = worker.view_latest_block().await?;
     println!("BlockInfo post-fast_forward {:?}", block_info);
-
-    // let (timestamp, epoch_height): (u64, u64) =
-    //     contract.call("current_env_data").view().await?.json()?;
-    //println!("timestamp = {}, epoch_height = {}", timestamp, epoch_height);
 
     // Unlock deposit back to user
     let ud_res = user
@@ -97,7 +100,8 @@ async fn test_default_workflow(
         .await?
         .json::<String>()?;
 
-    println!("Unlock habit response: {:?}\n", ud_res);
+    println!("Unlock deposit response: {:?}\n", ud_res);
+    assert_eq!(ud_res, "alice.test.near".to_string());
 
     println!("Passed ✅ default workflow");
     Ok(())
