@@ -149,7 +149,7 @@ impl StickyHabitsContract {
 
     // Beneficiary sets habit's flag to approved
     #[payable]
-    pub fn approve_habit(&mut self, user: AccountId, at_index: U64) {
+    pub fn approve_habit(&mut self, user: AccountId, at_index: U64) -> bool {
         let index = u64::from(at_index);
         let beneficiary: AccountId = env::predecessor_account_id();
         let current_time = env::block_timestamp();
@@ -166,11 +166,13 @@ impl StickyHabitsContract {
                        habit.deadline + self.approval_grace_period > current_time {
                             habit.approved = true;
                             let _evicted = existing_habits.replace(index, habit);
+                            return true;
                     }
                 },
                 None => (),
             };
         }
+        false
     }
 
     #[payable]

@@ -1,4 +1,5 @@
-use std::time::{Duration, SystemTime};
+use std::thread::sleep;
+use std::time::{Duration};
 use near_units::parse_near;
 use near_sdk::json_types::{U64};
 use serde_json::json;
@@ -19,8 +20,8 @@ async fn create_sticky_habits(
         .args_json(serde_json::json!({
             "owner": owner.id(),
             "dev_fee": 5u16,
-            "habit_acquisition_period": U64(1*3600*1000000000),
-            "approval_grace_period": U64(1*3600*1000000000)
+            "habit_acquisition_period": U64(10*1000000000), // 10 sec
+            "approval_grace_period": U64(10*1000000000)     // 10 sec
         }))
         .transact()
         .await?
@@ -33,14 +34,7 @@ async fn test_default_workflow(
     user: &Account,
     beneficiary: &Account,
     contract: &Contract,
-    worker: &Worker<Sandbox>
 ) -> anyhow::Result<()> {
-
-    // Get actual time and 2 hours to get expected unlock time
-    let now = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
-    let unlock_t = now + Duration::from_secs(7200);
-    println!("Unlock expected at: {:?}\n", unlock_t.as_nanos());
-
 
     // Add habit
     let ah_res = user
@@ -70,6 +64,9 @@ async fn test_default_workflow(
 
     println!("Update evidence response: {:?}\n", ue_res);
 
+    // Let time pass the deadline
+    sleep(Duration::from_secs(11));
+
     // Approve habit
     let ap_res = beneficiary
         .call(contract.id(), "approve_habit")
@@ -79,15 +76,12 @@ async fn test_default_workflow(
             }))
         .transact()
         .await?
-        .into_result()?;
+        .json::<bool>()?;
 
     println!("Approve habit response: {:?}\n", ap_res);
 
-    // Forward time into future
-    worker.fast_forward(8000).await?;
-
-    let block_info = worker.view_latest_block().await?;
-    println!("BlockInfo post-fast_forward {:?}", block_info);
+    // Let time pass the grace period
+    sleep(Duration::from_secs(11));
 
     // Unlock deposit back to user
     let ud_res = user
@@ -132,7 +126,7 @@ async fn main() -> anyhow::Result<()> {
     let contract = create_sticky_habits(&owner, &worker).await?;
 
     // Begin tests
-    test_default_workflow(&alice,&bob, &contract, &worker).await?;
+    test_default_workflow(&alice,&bob, &contract).await?;
 
 
     Ok(())
