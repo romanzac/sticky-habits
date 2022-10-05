@@ -20,7 +20,7 @@ export async function initContract() {
     // View methods are read only. They don't modify the state, but usually return some value.
     viewMethods: ['get_habits'],
     // Change methods can modify the state. But you don't receive the returned value when called.
-    changeMethods: ['add_habit'],
+    changeMethods: ['add_habit', 'update_evidence', 'approve_habit', 'unlock_deposit'],
   })
 }
 
@@ -38,6 +38,12 @@ export function login() {
   window.walletConnection.requestSignIn(nearConfig.contractName)
 }
 
+export async function get_habits(){
+  let habits = await window.contract.get_habits(user, from_index, limit_to)
+  return habits
+}
+
+
 export async function set_habits(habit){
   let response = await window.contract.set_habits({
     args:{habits: habits}
@@ -45,10 +51,7 @@ export async function set_habits(habit){
   return response
 }
 
-export async function get_habits(){
-  let habits = await window.contract.get_habits()
-  return habits
-}
+
 
 export async function add_habit(habit, deadline, penalty, beneficiary){
   let response = await window.contract.add_habit({

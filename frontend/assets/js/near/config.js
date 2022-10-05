@@ -1,4 +1,4 @@
-const CONTRACT_NAME = process.env.CONTRACT_NAME ||'ac-bud01.zajda.test.near'
+const CONTRACT_NAME = process.env.CONTRACT_NAME ||'sticky-habits.zajda.test.near'
 
 function getConfig(env) {
   switch (env) {
