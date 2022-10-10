@@ -83,6 +83,8 @@ impl StickyHabitsContract {
             .collect()
     }
 
+    // TODO: Add one more get function for habits assigned to a beneficiary from multiple users
+
     // Adds new habit
     #[payable]
     pub fn add_habit(&mut self, description: String, deadline_extension: U64, beneficiary: AccountId) {
