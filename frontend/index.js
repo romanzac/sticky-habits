@@ -1,13 +1,13 @@
 import 'regenerator-runtime/runtime';
 import { Wallet } from './near-wallet';
-import { HelloNEAR } from './near-interface';
+import { StickyHabits } from './near-interface';
 
 // When creating the wallet you can optionally ask to create an access key
 // Having the key enables to call non-payable methods without interrupting the user to sign
 const wallet = new Wallet({ createAccessKeyFor: process.env.CONTRACT_NAME })
 
 // Abstract the logic of interacting with the contract to simplify your flow
-const helloNEAR = new HelloNEAR({ contractId: process.env.CONTRACT_NAME, walletToUse: wallet });
+const stickyHabits = new StickyHabits({ contractId: process.env.CONTRACT_NAME, walletToUse: wallet });
 
 // Setup on page load
 window.onload = async () => {
@@ -19,37 +19,37 @@ window.onload = async () => {
     signedOutFlow();
   }
 
-  fetchGreeting();
+  await fetchHabits();
 };
 
 // Button clicks
-document.querySelector('form').onsubmit = doUserAction;
+//document.querySelector('form').onsubmit = doUserAction;
 document.querySelector('#sign-in-button').onclick = () => { wallet.signIn(); };
 document.querySelector('#sign-out-button').onclick = () => { wallet.signOut(); };
 
 // Take the new greeting and send it to the contract
-async function doUserAction(event) {
-  event.preventDefault();
-  const { greeting } = event.target.elements;
-
-  document.querySelector('#signed-in-flow main')
-    .classList.add('please-wait');
-
-  await helloNEAR.setGreeting(greeting.value);
-
-  // ===== Fetch the data from the blockchain =====
-  await fetchGreeting();
-  document.querySelector('#signed-in-flow main')
-    .classList.remove('please-wait');
-}
+// async function doUserAction(event) {
+//   event.preventDefault();
+//   const { greeting } = event.target.elements;
+//
+//   document.querySelector('#signed-in-flow main')
+//     .classList.add('please-wait');
+//
+//   await stickyHabits.setGreeting(greeting.value);
+//
+//   // ===== Fetch the data from the blockchain =====
+//   await fetchHabits();
+//   document.querySelector('#signed-in-flow main')
+//     .classList.remove('please-wait');
+// }
 
 // Get greeting from the contract on chain
-async function fetchGreeting() {
-  const currentGreeting = await helloNEAR.getGreeting();
+async function fetchHabits() {
+  const currentHabits = await stickyHabits.getHabits();
 
   document.querySelectorAll('[data-behavior=greeting]').forEach(el => {
-    el.innerText = currentGreeting;
-    el.value = currentGreeting;
+    el.innerText = currentHabits.description;
+    el.value = currentHabits.description;
   });
 }
 

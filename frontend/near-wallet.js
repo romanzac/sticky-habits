@@ -24,20 +24,20 @@ export class Wallet {
     network;
     createAccessKeyFor;
 
-    constructor({ createAccessKeyFor = undefined, network = 'testnet' }) {
+    constructor({ createAccessKeyFor = undefined, network = 'local' }) {
         // Login to a wallet passing a contractId will create a local
         // key, so the user skips signing non-payable transactions.
         // Omitting the accountId will result in the user being
         // asked to sign all transactions.
         this.createAccessKeyFor = createAccessKeyFor
-        this.network = 'testnet'
+        this.network = 'local'
     }
 
     // To be called when the website loads
     async startUp() {
         this.walletSelector = await setupWalletSelector({
             network: this.network,
-            modules: [setupMyNearWallet({ iconUrl: MyNearIconUrl }),
+            modules: [setupMyNearWallet({ walletUrl: "http://127.0.0.1:8334", iconUrl: MyNearIconUrl }),
                 setupLedger({ iconUrl: LedgerIconUrl })],
         });
 
@@ -68,7 +68,7 @@ export class Wallet {
     // Make a read-only call to retrieve information from the network
     async viewMethod({ contractId, method, args = {} }) {
         const { network } = this.walletSelector.options;
-        const provider = new providers.JsonRpcProvider({ url: network.nodeUrl });
+        const provider = new providers.JsonRpcProvider({ url: "http://127.0.0.1:8332" });
 
         let res = await provider.query({
             request_type: 'call_function',
@@ -105,7 +105,7 @@ export class Wallet {
     // Get transaction result from the network
     async getTransactionResult(txhash) {
         const { network } = this.walletSelector.options;
-        const provider = new providers.JsonRpcProvider({ url: network.nodeUrl });
+        const provider = new providers.JsonRpcProvider({ url: "http://127.0.0.1:8332" });
 
         // Retrieve transaction result from the network
         const transaction = await provider.txStatus(txhash, 'unnused');

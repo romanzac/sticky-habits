@@ -10,10 +10,9 @@ export class StickyHabits {
     async getHabits() {
         const min = 0;
         const limit = 7;
-        let habits = await this.wallet.viewMethod({ contractId: this.contractId, method: 'get_habits',
+        return await this.wallet.viewMethod({ contractId: this.contractId, method: 'get_habits',
             args:{ user: this.wallet.getAccountId(), from_index: min.toString(), limit_to: limit.toString() }});
 
-        return habits
     }
 
     async addHabit(description, deadline_extension, beneficiary) {
