@@ -7,12 +7,13 @@ import { providers } from 'near-api-js';
 import '@near-wallet-selector/modal-ui/styles.css';
 import { setupModal } from '@near-wallet-selector/modal-ui';
 import LedgerIconUrl from '@near-wallet-selector/ledger/assets/ledger-icon.png';
-import MyNearIconUrl from '@near-wallet-selector/my-near-wallet/assets/my-near-wallet-icon.png';
+import MyNearIconUrl from '@near-wallet-selector/near-wallet/assets/near-wallet-icon.png';
 
 // wallet selector options
 import { setupWalletSelector } from '@near-wallet-selector/core';
 import { setupLedger } from '@near-wallet-selector/ledger';
-import { setupMyNearWallet } from '@near-wallet-selector/my-near-wallet';
+import { setupNearWallet } from '@near-wallet-selector/near-wallet';
+
 
 const THIRTY_TGAS = '30000000000000';
 const NO_DEPOSIT = '0';
@@ -30,14 +31,20 @@ export class Wallet {
         // Omitting the accountId will result in the user being
         // asked to sign all transactions.
         this.createAccessKeyFor = createAccessKeyFor
-        this.network = 'local'
+        this.network = {
+            networkId: "local",
+                nodeUrl: "http://127.0.0.1:8332",
+                helperUrl: "http://127.0.0.1:8330",
+                explorerUrl: "http://127.0.0.1:8331",
+                indexerUrl: "https://your-custom-indexer-url",
+        }
     }
 
     // To be called when the website loads
     async startUp() {
         this.walletSelector = await setupWalletSelector({
             network: this.network,
-            modules: [setupMyNearWallet({ walletUrl: "http://127.0.0.1:8334", iconUrl: MyNearIconUrl }),
+            modules: [setupNearWallet({ walletUrl: "http://127.0.0.1:8334", iconUrl: MyNearIconUrl }),
                 setupLedger({ iconUrl: LedgerIconUrl })],
         });
 
