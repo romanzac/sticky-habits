@@ -35,25 +35,12 @@
     </button>
     <main>
         <h1>
-            Hello {window.accountId}
+            Place to Stick your Habits!
         </h1>
         <h1>
-            The contract says: <span class="greeting" data-behavior="greeting"></span>
+            The contract says: <span class="habits" data-behavior="habits"></span>
         </h1>
-        <form class="change">
-            <label for="greeting">Change greeting:</label>
-            <div>
-                <input
-                        autocomplete="off"
-                        id="greeting"
-                        data-behavior="greeting"
-                />
-                <button>
-                    <span>Save</span>
-                    <div class="loader"></div>
-                </button>
-            </div>
-        </form>
+
         <table>
         <tr>
             <th>Description</th>
@@ -80,6 +67,35 @@
             <td>Yes</td>
         </tr>
         </table>
+        <form class="change">
+            <label for="description">Add Habit:</label>
+            <div>
+                <input
+                        autocomplete="off"
+                        id="description"
+                        data-behavior="habit"
+                />
+                <input
+                        autocomplete="off"
+                        id="deadline_extension"
+                        data-behavior="habit"
+                />
+                <input
+                        autocomplete="off"
+                        id="deposit"
+                        data-behavior="habit"
+                />
+                <input
+                        autocomplete="off"
+                        id="beneficiary"
+                        data-behavior="habit"
+                />
+                <button>
+                    <span>Save</span>
+                    <div class="loader"></div>
+                </button>
+            </div>
+        </form>
         <hr>
 
     </main>

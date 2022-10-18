@@ -1,5 +1,7 @@
 /* Talking with a contract often involves transforming data, we recommend you to encapsulate that logic into a class */
 
+import { utils } from "near-api-js";
+
 export class StickyHabits {
     constructor({ contractId, walletToUse }) {
         this.contractId = contractId;
@@ -15,9 +17,11 @@ export class StickyHabits {
 
     }
 
-    async addHabit(description, deadline_extension, beneficiary) {
+    async addHabit(description, deadline_extension, deposit, beneficiary) {
+        const depositInYocto = utils.format.parseNearAmount(deposit);
         return await this.wallet.callMethod({ contractId: this.contractId, method: 'add_habit',
-            args:{ description: description, deadline_extension: deadline_extension.toString(), beneficiary: beneficiary }});
+            args:{ description: description, deadline_extension: deadline_extension.toString(),
+                beneficiary: beneficiary }, depositInYocto });
 
     }
 

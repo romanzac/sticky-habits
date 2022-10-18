@@ -23,33 +23,34 @@ window.onload = async () => {
 };
 
 // Button clicks
-//document.querySelector('form').onsubmit = doUserAction;
+document.querySelector('form').onsubmit = doUserAction;
 document.querySelector('#sign-in-button').onclick = () => { wallet.signIn(); };
 document.querySelector('#sign-out-button').onclick = () => { wallet.signOut(); };
 
-// Take the new greeting and send it to the contract
-// async function doUserAction(event) {
-//   event.preventDefault();
-//   const { greeting } = event.target.elements;
-//
-//   document.querySelector('#signed-in-flow main')
-//     .classList.add('please-wait');
-//
-//   await stickyHabits.setGreeting(greeting.value);
-//
-//   // ===== Fetch the data from the blockchain =====
-//   await fetchHabits();
-//   document.querySelector('#signed-in-flow main')
-//     .classList.remove('please-wait');
-// }
+// Take the new habit and send it to the contract
+async function doUserAction(event) {
+  event.preventDefault();
+  const { description, deadline_extension, deposit, beneficiary } = event.target.elements;
+
+  document.querySelector('#signed-in-flow main')
+    .classList.add('please-wait');
+
+  // How to attach a value to the call?
+  await stickyHabits.addHabit(description.value, deadline_extension.value, deposit.value, beneficiary.value);
+
+  // ===== Fetch the data from the blockchain =====
+  await fetchHabits();
+  document.querySelector('#signed-in-flow main')
+    .classList.remove('please-wait');
+}
 
 // Get greeting from the contract on chain
 async function fetchHabits() {
   const currentHabits = await stickyHabits.getHabits();
 
-  document.querySelectorAll('[data-behavior=greeting]').forEach(el => {
+  document.querySelectorAll('[data-behavior=habits]').forEach(el => {
     el.innerText = currentHabits.description;
-    el.value = currentHabits.description;
+    el.value = currentHabits.deposit;
   });
 }
 

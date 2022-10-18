@@ -36,7 +36,7 @@ export class Wallet {
                 nodeUrl: "http://127.0.0.1:8332",
                 helperUrl: "http://127.0.0.1:8330",
                 explorerUrl: "http://127.0.0.1:8331",
-                indexerUrl: "https://your-custom-indexer-url",
+                indexerUrl: "http://127.0.0.1:8333",
         }
     }
 
