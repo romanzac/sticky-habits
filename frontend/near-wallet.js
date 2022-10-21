@@ -1,19 +1,18 @@
 /* A helper file that simplifies using the wallet selector */
 
 // near api js
-import {providers, utils} from 'near-api-js';
+import { providers } from 'near-api-js';
 
 // wallet selector UI
 import '@near-wallet-selector/modal-ui/styles.css';
 import { setupModal } from '@near-wallet-selector/modal-ui';
 import LedgerIconUrl from '@near-wallet-selector/ledger/assets/ledger-icon.png';
-import MyNearIconUrl from '@near-wallet-selector/near-wallet/assets/near-wallet-icon.png';
+import MyNearIconUrl from '@near-wallet-selector/my-near-wallet/assets/my-near-wallet-icon.png';
 
 // wallet selector options
 import { setupWalletSelector } from '@near-wallet-selector/core';
 import { setupLedger } from '@near-wallet-selector/ledger';
-import { setupNearWallet } from '@near-wallet-selector/near-wallet';
-
+import { setupMyNearWallet } from '@near-wallet-selector/my-near-wallet';
 
 const THIRTY_TGAS = '30000000000000';
 const NO_DEPOSIT = '0';
@@ -33,10 +32,10 @@ export class Wallet {
         this.createAccessKeyFor = createAccessKeyFor
         this.network = {
             networkId: "local",
-                nodeUrl: "http://127.0.0.1:8332",
-                helperUrl: "http://127.0.0.1:8330",
-                explorerUrl: "http://127.0.0.1:8331",
-                indexerUrl: "http://127.0.0.1:8333",
+            nodeUrl: "http://127.0.0.1:8332",
+            helperUrl: "http://127.0.0.1:8330",
+            explorerUrl: "http://127.0.0.1:8331",
+            indexerUrl: "http://127.0.0.1:8333",
         }
     }
 
@@ -44,7 +43,7 @@ export class Wallet {
     async startUp() {
         this.walletSelector = await setupWalletSelector({
             network: this.network,
-            modules: [setupNearWallet({ walletUrl: "http://127.0.0.1:8334", iconUrl: MyNearIconUrl }),
+            modules: [setupMyNearWallet({ walletUrl: "http://127.0.0.1:8334", iconUrl: MyNearIconUrl }),
                 setupLedger({ iconUrl: LedgerIconUrl })],
         });
 
@@ -75,7 +74,7 @@ export class Wallet {
     // Make a read-only call to retrieve information from the network
     async viewMethod({ contractId, method, args = {} }) {
         const { network } = this.walletSelector.options;
-        const provider = new providers.JsonRpcProvider({ url: "http://127.0.0.1:8332" });
+        const provider = new providers.JsonRpcProvider({ url: network.nodeUrl });
 
         let res = await provider.query({
             request_type: 'call_function',
@@ -90,8 +89,6 @@ export class Wallet {
     // Call a method that changes the contract's state
     async callMethod({ contractId, method, args = {}, gas = THIRTY_TGAS, deposit = NO_DEPOSIT }) {
         // Sign a transaction with the "FunctionCall" action
-        const depositInYocto = utils.format.parseNearAmount("10");
-        console.log();
         const outcome = await this.wallet.signAndSendTransaction({
             signerId: this.accountId,
             receiverId: contractId,
@@ -102,7 +99,7 @@ export class Wallet {
                         methodName: method,
                         args,
                         gas,
-                        depositInYocto,
+                        deposit,
                     },
                 },
             ],
@@ -114,7 +111,7 @@ export class Wallet {
     // Get transaction result from the network
     async getTransactionResult(txhash) {
         const { network } = this.walletSelector.options;
-        const provider = new providers.JsonRpcProvider({ url: "http://127.0.0.1:8332" });
+        const provider = new providers.JsonRpcProvider({ url: network.nodeUrl });
 
         // Retrieve transaction result from the network
         const transaction = await provider.txStatus(txhash, 'unnused');

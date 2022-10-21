@@ -19,7 +19,7 @@ window.onload = async () => {
     signedOutFlow();
   }
 
-  await fetchHabits();
+  //await fetchHabits();
 };
 
 // Button clicks
@@ -30,15 +30,20 @@ document.querySelector('#sign-out-button').onclick = () => { wallet.signOut(); }
 // Take the new habit and send it to the contract
 async function doUserAction(event) {
   event.preventDefault();
-  //const { description, deadline_extension, deposit, beneficiary } = event.target.elements;
- //
- //  document.querySelector('#signed-in-flow main')
- //    .classList.add('please-wait');
- //
- //  await stickyHabits.addHabit(description.value, deadline_extension.value, deposit.value, beneficiary.value);
- //
+  const { description, deadline_extension, deposit, beneficiary } = event.target.elements;
+  console.log(description.value);
+  console.log(deadline_extension.value);
+  console.log(deposit.value);
+  console.log(beneficiary.value);
+
+
+  document.querySelector('#signed-in-flow main')
+    .classList.add('please-wait');
+
+  await stickyHabits.addHabit(description.value, deadline_extension.value, deposit.value, beneficiary.value);
+
  //  ===== Fetch the data from the blockchain =====
- await fetchHabits();
+ //await fetchHabits();
  //  document.querySelector('#signed-in-flow main')
  //    .classList.remove('please-wait');
 }

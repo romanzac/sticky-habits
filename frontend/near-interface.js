@@ -18,12 +18,12 @@ export class StickyHabits {
     }
 
     async addHabit(description, deadline_extension, deposit, beneficiary) {
-        const depositInYocto = utils.format.parseNearAmount("10");
+        const depositInYocto = utils.format.parseNearAmount(deposit);
         const THIRTY_TGAS = '30000000000000';
 
         return await this.wallet.callMethod({ contractId: this.contractId, method: 'add_habit',
             args:{ description: description, deadline_extension: deadline_extension.toString(),
-                beneficiary: beneficiary }, THIRTY_TGAS, depositInYocto });
+                beneficiary: beneficiary }, gas: THIRTY_TGAS, deposit: depositInYocto });
 
     }
 }
