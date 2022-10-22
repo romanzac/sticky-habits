@@ -37,11 +37,22 @@
         <h1>
             Place to Stick your Habits!
         </h1>
-        <h1>
-            The contract says: <span class="habits" data-behavior="habits"></span>
-        </h1>
 
-        <table>
+        <table class="table table-striped">
+            <thead>
+            <tr>
+                <th scope="col">Description</th>
+                <th scope="col">Deadline</th>
+                <th scope="col">Deposit</th>
+                <th scope="col">Beneficiary</th>
+                <th scope="col">Evidence</th>
+                <th scope="col">Approved</th>
+            </tr>
+            </thead>
+            <tbody id="habits-table"> </tbody>
+        </table>
+
+        <!--table>
         <tr>
             <th>Description</th>
             <th>Deadline</th>
@@ -66,7 +77,7 @@
             <td>https://www.icloud.com/110d.jpg</td>
             <td>Yes</td>
         </tr>
-        </table>
+        </table-->
         <form class="change">
             <label for="description">Add Habit:</label>
             <div>

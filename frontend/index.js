@@ -19,7 +19,7 @@ window.onload = async () => {
     signedOutFlow();
   }
 
-  //await fetchHabits();
+  await fetchHabits();
 };
 
 // Button clicks
@@ -31,16 +31,20 @@ document.querySelector('#sign-out-button').onclick = () => { wallet.signOut(); }
 async function doUserAction(event) {
   event.preventDefault();
   const { description, deadline_extension, deposit, beneficiary } = event.target.elements;
-  console.log(description.value);
-  console.log(deadline_extension.value);
-  console.log(deposit.value);
-  console.log(beneficiary.value);
 
+  // document.querySelector('#signed-in-flow main')
+  //   .classList.add('please-wait');
 
-  document.querySelector('#signed-in-flow main')
-    .classList.add('please-wait');
-
-  await stickyHabits.addHabit(description.value, deadline_extension.value, deposit.value, beneficiary.value);
+  try {
+    await stickyHabits.addHabit(description.value, deadline_extension.value, deposit.value, beneficiary.value);
+  } catch (e) {
+    alert(
+        'Something went wrong! ' +
+        'Maybe you need to sign out and back in? ' +
+        'Check your browser console for more info.'
+    )
+    throw e
+  }
 
  //  ===== Fetch the data from the blockchain =====
  //await fetchHabits();
@@ -50,13 +54,30 @@ async function doUserAction(event) {
 
 // Get greeting from the contract on chain
 async function fetchHabits() {
-  const currentHabits = await stickyHabits.getHabits();
-  console.log(currentHabits);
+  const wipHabits = await stickyHabits.getHabits();
+  console.log(wipHabits);
 
-  document.querySelectorAll('[data-behavior=habits]').forEach(el => {
-    el.innerText = currentHabits.description;
-    el.value = currentHabits.deposit;
+  document.getElementById('habits-table').innerHTML = ''
+
+  wipHabits.forEach(elem => {
+    let tr = document.createElement('tr')
+    tr.innerHTML = `
+      <tr>
+        <th scope="row">${elem.description}</th>
+        <td>${elem.deadline}</td>
+        <td>${elem.deposit}</td>
+        <td>${elem.beneficiary}</td>
+        <td>${elem.evidence}</td>
+        <td>${elem.approved}</td>
+      </tr>
+    `
+    document.getElementById('habits-table').appendChild(tr)
   });
+
+  // document.querySelectorAll('[data-behavior=habits]').forEach(el => {
+  //   el.innerText = currentHabits.description;
+  //   el.value = currentHabits.deposit;
+  // });
 }
 
 // Display the signed-out-flow container
