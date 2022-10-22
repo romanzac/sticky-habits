@@ -95,6 +95,9 @@ impl StickyHabitsContract {
             let deadline = env::block_timestamp() + self.habit_acquisition_period +
                 u64::from(deadline_extension);
 
+            // Check if user is different from beneficiary
+            assert_ne!(user, beneficiary, "User and Beneficiary should be different accounts");
+
             // Check if user has already any stored habits
             let mut existing_habits = match self.habits.get(&user) {
                 Some(i) => i,
