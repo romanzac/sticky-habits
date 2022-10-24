@@ -19,7 +19,7 @@ async fn create_sticky_habits(
     sh.call("init")
         .args_json(serde_json::json!({
             "owner": owner.id(),
-            "dev_fee": 5u16,
+            "dev_fee": U64(5),
             "habit_acquisition_period": U64(10*1000000000), // 10 sec
             "approval_grace_period": U64(10*1000000000)     // 10 sec
         }))

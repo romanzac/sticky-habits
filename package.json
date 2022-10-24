@@ -12,7 +12,7 @@
     "test": "npm run build:contract && npm run test:unit && npm run test:integration",
     "test:unit": "cd contract && cargo test",
     "test:integration": "npm run test:integration:rs",
-    "test:integration:rs": "cd integration-tests/rs && cargo run --example integration-tests"
+    "test:integration:rs": "cp ./contract/target/wasm32-unknown-unknown/release/stickyhabits.wasm ./out/main.wasm && cd integration-tests/rs && cargo run --example integration-tests"
   },
   "devDependencies": {
     "near-cli": "^3.3.0"

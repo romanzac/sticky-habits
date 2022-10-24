@@ -31,7 +31,7 @@ pub struct Habit {
 pub struct StickyHabitsContract {
     owner: AccountId,
     balance: Balance,
-    dev_fee: u16,                  // percent
+    dev_fee: u64,                  // percent
     habit_acquisition_period: u64, // Nanoseconds
     approval_grace_period: u64,    // Nanoseconds
     habits: UnorderedMap<AccountId, Vector<Habit>>,
@@ -56,12 +56,12 @@ impl Default for StickyHabitsContract {
 impl StickyHabitsContract {
     #[init]
     #[private]
-    pub fn init(owner: AccountId, dev_fee: u16, habit_acquisition_period: U64, approval_grace_period: U64) -> Self {
+    pub fn init(owner: AccountId, dev_fee: U64, habit_acquisition_period: U64, approval_grace_period: U64) -> Self {
         assert!(!env::state_exists(), "Already initialized");
         Self {
             owner,
             balance: Balance::from(U128(0)),
-            dev_fee,
+            dev_fee: u64::from(dev_fee),
             habit_acquisition_period: u64::from(habit_acquisition_period),
             approval_grace_period: u64::from(approval_grace_period),
             habits: UnorderedMap::new(b"d") }
@@ -82,6 +82,19 @@ impl StickyHabitsContract {
             .take(limit as usize)
             .collect()
     }
+
+    // Returns actual contract settings and state excluding habits
+    pub fn get_state(&self) -> Self {
+        assert!(env::state_exists(), "Not initialized yet");
+        Self {
+            owner: self.owner.clone(),
+            balance: self.balance,
+            dev_fee: self.dev_fee,
+            habit_acquisition_period: self.habit_acquisition_period,
+            approval_grace_period: self.approval_grace_period,
+            habits: UnorderedMap::new(b"d") }
+    }
+
 
     // TODO: Add one more get function for habits assigned to a beneficiary from multiple users
 
@@ -254,7 +267,7 @@ mod tests {
     fn initializes() {
         let contract = StickyHabitsContract::init(
             OWNER.parse().unwrap(),
-            7,
+            U64(7),
             U64(1*24*3600*1000000000),
             U64(1*24*3600*1000000000));
         assert_eq!(contract.owner, OWNER.parse().unwrap())
