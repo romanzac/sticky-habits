@@ -9,6 +9,14 @@ export class StickyHabits {
 
     }
 
+    async initContract(owner, dev_fee, habit_acquisition_period, approval_grace_period) {
+        const THIRTY_TGAS = '30000000000000';
+        return await this.wallet.callMethod({ contractId: this.contractId, method: 'init',
+            args:{ owner: owner, dev_fee: dev_fee, habit_acquisition_period: habit_acquisition_period,
+                approval_grace_period: approval_grace_period }, gas: THIRTY_TGAS });
+
+    }
+
     async getHabits() {
         const min = 0;
         const limit = 7;

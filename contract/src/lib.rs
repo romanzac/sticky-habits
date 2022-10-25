@@ -84,16 +84,16 @@ impl StickyHabitsContract {
     }
 
     // Returns actual contract settings and state excluding habits
-    pub fn get_state(&self) -> Self {
-        assert!(env::state_exists(), "Not initialized yet");
-        Self {
-            owner: self.owner.clone(),
-            balance: self.balance,
-            dev_fee: self.dev_fee,
-            habit_acquisition_period: self.habit_acquisition_period,
-            approval_grace_period: self.approval_grace_period,
-            habits: UnorderedMap::new(b"d") }
-    }
+    // pub fn get_state(&self) -> Self {
+    //     assert!(env::state_exists(), "Not initialized yet");
+    //     Self {
+    //         owner: self.owner.clone(),
+    //         balance: self.balance,
+    //         dev_fee: self.dev_fee,
+    //         habit_acquisition_period: self.habit_acquisition_period,
+    //         approval_grace_period: self.approval_grace_period,
+    //         habits: UnorderedMap::new(b"d") }
+    // }
 
 
     // TODO: Add one more get function for habits assigned to a beneficiary from multiple users

@@ -35,48 +35,37 @@
     </button>
     <main>
         <h1>
-            Place to Stick your Habits!
+            Initialize Sticky Habits
         </h1>
 
-        <table class="table table-striped">
-            <thead>
-            <tr>
-                <th scope="col">Description</th>
-                <th scope="col">Deadline</th>
-                <th scope="col">Deposit</th>
-                <th scope="col">Beneficiary</th>
-                <th scope="col">Evidence</th>
-                <th scope="col">Approved</th>
-            </tr>
-            </thead>
-            <tbody id="habits-table"> </tbody>
-        </table>
-
         <form class="change">
-            <label for="description">Add Habit:</label>
             <div>
+                <label for="owner">Owner</label>
                 <input
                         autocomplete="off"
-                        id="description"
-                        data-behavior="habit"
+                        id="owner"
+                        data-behavior="contract"
                 />
+                <label for="dev_fee">Dev Fee</label>
                 <input
                         autocomplete="off"
-                        id="deadline_extension"
-                        data-behavior="habit"
+                        id="dev_fee"
+                        data-behavior="contract"
                 />
+                <label for="habit_acquisition_period">Habit Acquisition Period</label>
                 <input
                         autocomplete="off"
-                        id="deposit"
-                        data-behavior="habit"
+                        id="habit_acquisition_period"
+                        data-behavior="contract"
                 />
+                <label for="approval_grace_period">Approval Grace Period</label>
                 <input
                         autocomplete="off"
-                        id="beneficiary"
-                        data-behavior="habit"
+                        id="approval_grace_period"
+                        data-behavior="contract"
                 />
                 <button>
-                    <span>Save</span>
+                    <span>Init Contract</span>
                     <div class="loader"></div>
                 </button>
             </div>
@@ -86,8 +75,6 @@
     </main>
 </div>
 
-<script src="index.js" type="module"></script>
-
-<a href="/init-contract.html">Admin Page</a>
+<script src="init-contract.js" type="module"></script>
 </body>
 </html>
