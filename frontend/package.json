@@ -4,7 +4,8 @@
   "license": "(MIT AND Apache-2.0)",
   "scripts": {
     "start": "./start.sh",
-    "build": "parcel build index.html --public-url ./"
+    "build": "parcel build index.html --public-url ./",
+    "init": "./init.sh"
   },
   "devDependencies": {
     "env-cmd": "^10.1.0",
