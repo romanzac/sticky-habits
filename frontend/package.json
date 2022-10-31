@@ -5,7 +5,7 @@
   "scripts": {
     "start": "./start.sh",
     "build": "parcel build index.html --public-url ./",
-    "init": "./init.sh"
+    "init-contract": "./init-contract.sh"
   },
   "devDependencies": {
     "env-cmd": "^10.1.0",
