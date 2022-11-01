@@ -26,4 +26,21 @@ export class StickyHabits {
                 beneficiary: beneficiary }, gas: THIRTY_TGAS, deposit: depositInYocto });
 
     }
+
+    async updateEvidence(at_index, evidence) {
+        return await this.wallet.callMethod({ contractId: this.contractId, method: 'update_evidence',
+            args:{ at_index: at_index.toString(), evidence: evidence } });
+    }
+
+    async approveHabit(user, at_index) {
+        return await this.wallet.callMethod({ contractId: this.contractId, method: 'approve_habit',
+            args:{ user: user, at_index: at_index.toString() } });
+    }
+
+    async unlockDeposit(user, at_index) {
+        return await this.wallet.callMethod({ contractId: this.contractId, method: 'unlock_deposit',
+            args:{ user: user, at_index: at_index.toString() } });
+    }
+
+
 }
