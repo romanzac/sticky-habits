@@ -13,8 +13,8 @@ init () {
   local_near call ${CONTRACT_ACCOUNT} init '{
       "owner": "zajda.test.near",
       "dev_fee": "5",
-      "habit_acquisition_period": "10000000000",
-      "approval_grace_period": "10000000000"
+      "habit_acquisition_period": "60000000000",
+      "approval_grace_period": "60000000000"
   }' --accountId ${CONTRACT_ACCOUNT}
 
 }

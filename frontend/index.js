@@ -1,6 +1,7 @@
 import 'regenerator-runtime/runtime';
 import { Wallet } from './near-wallet';
 import { StickyHabits } from './near-interface';
+import { utils } from "near-api-js";
 
 // When creating the wallet you can optionally ask to create an access key
 // Having the key enables to call non-payable methods without interrupting the user to sign
@@ -60,12 +61,13 @@ async function fetchHabits() {
   document.getElementById('habits-table').innerHTML = ''
 
   wipHabits.forEach(elem => {
+    const depositinNear = utils.format.formatNearAmount(elem.deposit)
     let tr = document.createElement('tr')
     tr.innerHTML = `
       <tr>
         <th scope="row">${elem.description}</th>
         <td>${elem.deadline}</td>
-        <td>${elem.deposit}</td>
+        <td>${depositinNear}</td>
         <td>${elem.beneficiary}</td>
         <td>${elem.evidence}</td>
         <td>${elem.approved}</td>
