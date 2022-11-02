@@ -19,8 +19,8 @@ pub const STORAGE_COST: u128 = 1_000_000_000_000_000_000_000;
 #[serde(crate = "near_sdk::serde")]
 pub struct Habit {
     description: String,
-    deadline: u64,
-    deposit: u128,
+    deadline: U64,
+    deposit: U128,
     beneficiary: AccountId,
     evidence: String,
     approved: bool
@@ -123,8 +123,8 @@ impl StickyHabitsContract {
 
             existing_habits.push(&Habit{
                 description: description.clone(),
-                deadline,
-                deposit: to_lock,
+                deadline: U64(deadline),
+                deposit: U128(to_lock),
                 beneficiary,
                 evidence: "".to_string(),
                 approved: false
@@ -174,8 +174,8 @@ impl StickyHabitsContract {
             match &mut existing_habits.get(index) {
                 Some(habit) => {
                     if habit.beneficiary == beneficiary &&
-                       habit.deadline < current_time &&
-                       habit.deadline + self.approval_grace_period > current_time {
+                       u64::from(habit.deadline) < current_time &&
+                        u64::from(habit.deadline) + self.approval_grace_period > current_time {
                             habit.approved = true;
                             let _evicted = existing_habits.replace(index, habit);
                             return true;
@@ -202,23 +202,23 @@ impl StickyHabitsContract {
                 Some(habit) => {
                     // Return all deposit to user if conditions met
                     if account == user && habit.approved &&
-                        habit.deadline + self.approval_grace_period < current_time {
-                        Promise::new(account.clone()).transfer(habit.deposit);
-                        self.balance -= habit.deposit;
-                        habit.deposit = 0;
+                        u64::from(habit.deadline) + self.approval_grace_period < current_time {
+                        Promise::new(account.clone()).transfer(u128::from(habit.deposit));
+                        self.balance -= u128::from(habit.deposit);
+                        habit.deposit = U128(0);
                         let _evicted = existing_habits.replace(index, habit);
                         return user.to_string();
                     }
                     // Split deposit between developer and beneficiary if conditions met
                     if account == habit.beneficiary && !habit.approved &&
-                        habit.deadline + self.approval_grace_period < current_time {
-                            let to_beneficiary = habit.deposit / (100-self.dev_fee as u128);
-                            let to_developer = habit.deposit - to_beneficiary;
+                        u64::from(habit.deadline) + self.approval_grace_period < current_time {
+                            let to_beneficiary = u128::from(habit.deposit) / (100-self.dev_fee as u128);
+                            let to_developer = u128::from(habit.deposit) - to_beneficiary;
                             Promise::new(account.clone()).transfer(to_beneficiary);
                             Promise::new(self.owner.clone()).transfer(to_developer);
 
-                            self.balance -= habit.deposit;
-                            habit.deposit = 0;
+                            self.balance -= u128::from(habit.deposit);
+                            habit.deposit = U128(0);
                             let _evicted = existing_habits.replace(index, habit);
                             return account.to_string();
                     }
@@ -281,7 +281,7 @@ mod tests {
         let posted_habit = &contract.get_habits(AccountId::from_str("roman").unwrap(),
                                                 None, None)[0];
         assert_eq!(posted_habit.description, "Clean my keyboard once a week".to_string());
-        assert_eq!(posted_habit.deposit, 10*NEAR-STORAGE_COST);
+        assert_eq!(u128::from(posted_habit.deposit), 10*NEAR-STORAGE_COST);
     }
 
     #[test]
@@ -341,7 +341,8 @@ mod tests {
 
         let last_habit = &contract.get_habits(AccountId::from_str("roman").unwrap(),
                                               Some(U128(1)), Some(U64(2)))[1];
-        assert_eq!(last_habit.deadline, 1664172263000000000 + contract.habit_acquisition_period + 60000000000);
+        assert_eq!(u64::from(last_habit.deadline), 1664172263000000000 +
+            contract.habit_acquisition_period + 60000000000);
         assert_eq!(last_habit.beneficiary, AccountId::from_str("alice").unwrap());
         assert_eq!(last_habit.approved, false);
     }
