@@ -62,11 +62,12 @@ async function fetchHabits() {
 
   wipHabits.forEach(elem => {
     const depositinNear = utils.format.formatNearAmount(elem.deposit)
+    const date = new Date(elem.deadline / 1000000);
     let tr = document.createElement('tr')
     tr.innerHTML = `
       <tr>
         <th scope="row">${elem.description}</th>
-        <td>${elem.deadline}</td>
+        <td>${date}</td>
         <td>${depositinNear}</td>
         <td>${elem.beneficiary}</td>
         <td>${elem.evidence}</td>
