@@ -35,6 +35,7 @@ pub struct StickyHabitsContract {
     habit_acquisition_period: u64, // Nanoseconds
     approval_grace_period: u64,    // Nanoseconds
     habits: UnorderedMap<AccountId, Vector<Habit>>,
+    beneficiaries: UnorderedMap<AccountId, Vector<AccountId>>,
 }
 
 
@@ -47,7 +48,9 @@ impl Default for StickyHabitsContract {
             dev_fee: 5,
             habit_acquisition_period: 21*24*3600*1000000000 as u64,
             approval_grace_period: 15*24*3600*1000000000 as u64,
-            habits: UnorderedMap::new(b"d") }
+            habits: UnorderedMap::new(b"d"),
+            beneficiaries: UnorderedMap::new(b"d")
+        }
     }
 }
 
@@ -64,11 +67,13 @@ impl StickyHabitsContract {
             dev_fee: u64::from(dev_fee),
             habit_acquisition_period: u64::from(habit_acquisition_period),
             approval_grace_period: u64::from(approval_grace_period),
-            habits: UnorderedMap::new(b"d") }
+            habits: UnorderedMap::new(b"d"),
+            beneficiaries: UnorderedMap::new(b"d")
+        }
     }
 
     // Returns an array of habits for the user with from and limit parameters.
-    pub fn get_habits(&self, user: AccountId, from_index:Option<U128>, limit_to:Option<U64>) -> Vec<Habit> {
+    pub fn get_habits_user(&self, user: AccountId, from_index:Option<U128>, limit_to:Option<U64>) -> Vec<Habit> {
         let from = u128::from(from_index.unwrap_or(U128(0)));
         let limit = u64::from(limit_to.unwrap_or(U64(1)));
 
@@ -83,14 +88,42 @@ impl StickyHabitsContract {
             .collect()
     }
 
+    // Returns an array of habits of beneficiary's friends with from and limit parameters.
+    pub fn get_habits_beneficiary(&self, beneficiary: AccountId, from_index:Option<U128>, limit_to:Option<U64>) -> Vec<Habit> {
+        let from = u128::from(from_index.unwrap_or(U128(0)));
+        let limit = u64::from(limit_to.unwrap_or(U64(1)));
+
+        let mut habits: Vec<Habit> = Vec::new();
+
+        // Check if any users assigned habits for beneficiary
+        let beneficiary_users = match self.beneficiaries.get(&beneficiary) {
+            Some(v) => v,
+            None => Vector::new(b"m"),
+        };
+
+        // Get habits from all related users
+        for user in beneficiary_users.iter() {
+            let user_habits = match self.habits.get(&user) {
+                Some(v) => v,
+                None => Vector::new(b"m"),
+            };
+            let mut user_habits_v: Vec<Habit> = user_habits.iter()
+                .skip(from as usize)
+                .take(limit as usize)
+                .collect();
+            if user_habits_v.len() > 0 {
+                habits.append(&mut user_habits_v);
+            }
+        }
+
+        habits
+    }
+
     // Returns actual contract balance
     pub fn get_balance(&self) -> U64 {
         assert!(env::state_exists(), "Not initialized yet");
         U64(self.balance as u64)
     }
-
-
-    // TODO: Add one more get function for habits assigned to a beneficiary from multiple users
 
     // Adds new habit
     #[payable]
@@ -132,6 +165,8 @@ impl StickyHabitsContract {
 
             self.habits.insert(&user, &existing_habits);
             self.balance += Balance::from(to_lock);
+
+            // TODO: update beneficiaries
 
             log!("Deposit of {} has been made for habit {}", to_lock, description);
 
@@ -278,7 +313,7 @@ mod tests {
             AccountId::from_str("adam").unwrap()
         );
 
-        let posted_habit = &contract.get_habits(AccountId::from_str("roman").unwrap(),
+        let posted_habit = &contract.get_habits_user(AccountId::from_str("roman").unwrap(),
                                                 None, None)[0];
         assert_eq!(posted_habit.description, "Clean my keyboard once a week".to_string());
         assert_eq!(u128::from(posted_habit.deposit), 10*NEAR-STORAGE_COST);
@@ -304,7 +339,7 @@ mod tests {
 
         contract.update_evidence(U64(1),"https://www.icloud.com/myfile.mov".to_string());
 
-        let updated_habit = &contract.get_habits(AccountId::from_str("roman").unwrap(),
+        let updated_habit = &contract.get_habits_user(AccountId::from_str("roman").unwrap(),
                                                  None, Some(U64(2)))[1];
         assert_eq!(updated_habit.evidence, "https://www.icloud.com/myfile.mov".to_string());
 
@@ -335,11 +370,11 @@ mod tests {
             AccountId::from_str("alice").unwrap()
         );
 
-        let habits = &contract.get_habits(AccountId::from_str("roman").unwrap(),
+        let habits = &contract.get_habits_user(AccountId::from_str("roman").unwrap(),
                                           None, Some(U64(3)));
         assert_eq!(habits.len(), 3);
 
-        let last_habit = &contract.get_habits(AccountId::from_str("roman").unwrap(),
+        let last_habit = &contract.get_habits_user(AccountId::from_str("roman").unwrap(),
                                               Some(U128(1)), Some(U64(2)))[1];
         assert_eq!(u64::from(last_habit.deadline), 1664172263000000000 +
             contract.habit_acquisition_period + 60000000000);
@@ -396,4 +431,5 @@ mod tests {
 
 
 }
+
 
