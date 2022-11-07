@@ -16,11 +16,11 @@ window.onload = async () => {
 
   if (isSignedIn) {
     signedInFlow();
+    await fetchHabits();
   } else {
     signedOutFlow();
   }
 
-  await fetchHabits();
 };
 
 // Button clicks
