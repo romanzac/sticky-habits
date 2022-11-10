@@ -3,11 +3,10 @@ import { Wallet } from './near-wallet';
 import { StickyHabits } from './near-interface';
 import { utils } from "near-api-js";
 
-// When creating the wallet you can optionally ask to create an access key
-// Having the key enables to call non-payable methods without interrupting the user to sign
+// Wallet instance
 const wallet = new Wallet({ createAccessKeyFor: process.env.CONTRACT_NAME })
 
-// Abstract the logic of interacting with the contract to simplify your flow
+// Logic for interacting with the contract 
 const stickyHabits = new StickyHabits({ contractId: process.env.CONTRACT_NAME, walletToUse: wallet });
 
 // Setup on page load
@@ -53,7 +52,7 @@ async function doUserAction(event) {
  //    .classList.remove('please-wait');
 }
 
-// Get greeting from the contract on chain
+// Get habits from the contract on chain
 async function fetchHabits() {
   const wipHabits = await stickyHabits.getHabits();
   console.log(wipHabits);
