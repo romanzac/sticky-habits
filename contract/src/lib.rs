@@ -8,7 +8,7 @@ use near_sdk::json_types::{U128, U64};
 pub const STORAGE_COST: u128 = 1_000_000_000_000_000_000_000;
 
 #[near_bindgen]
-#[derive(BorshDeserialize, BorshSerialize, Serialize)]
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Debug)]
 #[serde(crate = "near_sdk::serde")]
 pub struct Habit {
     description: String,
@@ -75,9 +75,10 @@ impl StickyHabitsContract {
         };
 
         existing_habits.iter()
-            .skip(from as usize)
-            .take(limit as usize)
-            .collect()
+                .skip(from as usize)
+                .take(limit as usize)
+                .collect()
+
     }
 
     // Returns an array of habits of beneficiary's friends with from and limit parameters.
@@ -158,20 +159,22 @@ impl StickyHabitsContract {
         self.balance += Balance::from(to_lock);
 
         // Check if any user assigned habits for beneficiary
-        let mut beneficiary_users = match self.beneficiaries.get(&beneficiary) {
+        let mut beneficiary_users: Vector<AccountId> = match self.beneficiaries.get(&beneficiary) {
             Some(v) => v,
             None => Vector::new(b"m"),
         };
+        // TODO: why pushing to array makes HostError(GuestPanic { panic_msg: "Cannot deserialize element" }
+        beneficiary_users.push(&user);
 
         // Check/add user to the list for beneficiary
-        match beneficiary_users.iter().find(|x| *x == user) {
-            Some(_item) => (),
-            None => {
-                // Add new or update beneficiary with this user
-                beneficiary_users.push(&user);
-                self.beneficiaries.insert(&beneficiary, &beneficiary_users);
-            }
-        }
+        // match beneficiary_users.iter().find(|x| *x == user) {
+        //     Some(_item) => (),
+        //     None => {
+        //         // Add new or update beneficiary with this user
+        //         beneficiary_users.push(&user);
+        //        // self.beneficiaries.insert(&beneficiary, &beneficiary_users);
+        //     }
+        // }
 
         log!("Deposit of {} has been made for habit {}", to_lock, description);
     }
