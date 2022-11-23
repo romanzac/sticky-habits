@@ -164,7 +164,7 @@ impl StickyHabitsContract {
             Some(v) => v,
             None => Vector::new(b"m"),
         };
-        // TODO: why pushing to array makes HostError(GuestPanic { panic_msg: "Cannot deserialize element" }
+        // TODO: why pushing to unrelated Vector makes HostError(GuestPanic { panic_msg: "Cannot deserialize element" }
         beneficiary_users.push(&user);
 
         // Check/add user to the list for beneficiary
