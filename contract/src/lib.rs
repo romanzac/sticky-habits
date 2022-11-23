@@ -5,7 +5,8 @@ use near_sdk::{env, AccountId, Balance, near_bindgen, log, Promise};
 use near_sdk::collections::{UnorderedMap, Vector};
 use near_sdk::json_types::{U128, U64};
 
-pub const STORAGE_COST: u128 = 1_000_000_000_000_000_000_000;
+pub const STORAGE_COST: u128 = 10_000_000_000_000_000_000_000;
+
 
 #[near_bindgen]
 #[derive(Serialize, Deserialize, Debug, BorshDeserialize, BorshSerialize)]
