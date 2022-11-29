@@ -29,7 +29,7 @@ pub struct StickyHabitsContract {
     habit_acquisition_period: u64,  // Nanoseconds
     approval_grace_period: u64,     // Nanoseconds
     habits: UnorderedMap<AccountId, Vector<Habit>>,
-    beneficiaries: UnorderedMap<AccountId, Vector<AccountId>>,
+    beneficiaries: UnorderedMap<AccountId, Vec<AccountId>>,
 }
 
 
@@ -92,7 +92,7 @@ impl StickyHabitsContract {
         // Check if any users assigned habits for beneficiary
         let beneficiary_users = match self.beneficiaries.get(&beneficiary) {
             Some(v) => v,
-            None => Vector::new(b"m"),
+            None => Vec::new(),
         };
 
         // Get habits from all related users
@@ -159,23 +159,21 @@ impl StickyHabitsContract {
         self.habits.insert(&user, &existing_habits);
         self.balance += Balance::from(to_lock);
 
-        // Check if any user assigned habits for beneficiary
-        let mut beneficiary_users: Vector<AccountId> = match self.beneficiaries.get(&beneficiary) {
+        // Check if beneficiary has been assigned any users(habits) before
+        let mut beneficiary_users: Vec<AccountId> = match self.beneficiaries.get(&beneficiary) {
             Some(v) => v,
-            None => Vector::new(b"m"),
+            None => Vec::new(),
         };
-        // TODO: why pushing to unrelated Vector makes HostError(GuestPanic { panic_msg: "Cannot deserialize element" }
-        beneficiary_users.push(&user);
 
-        // Check/add user to the list for beneficiary
-        // match beneficiary_users.iter().find(|x| *x == user) {
-        //     Some(_item) => (),
-        //     None => {
-        //         // Add new or update beneficiary with this user
-        //         beneficiary_users.push(&user);
-        //        // self.beneficiaries.insert(&beneficiary, &beneficiary_users);
-        //     }
-        // }
+        // Check/add user to the list for beneficiary if not present yet
+        match beneficiary_users.iter().find(|x| *x == &user) {
+            Some(_item) => (),
+            None => {
+                // Add new or update beneficiary with this user
+                beneficiary_users.push(user);
+               // self.beneficiaries.insert(&beneficiary, &beneficiary_users);
+            }
+        }
 
         log!("Deposit of {} has been made for habit {}", to_lock, description);
     }
