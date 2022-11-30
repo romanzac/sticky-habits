@@ -1,4 +1,4 @@
-
+use std::collections::HashMap;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::serde::{Serialize, Deserialize};
 use near_sdk::{env, AccountId, Balance, near_bindgen, log, Promise};
@@ -29,7 +29,7 @@ pub struct StickyHabitsContract {
     habit_acquisition_period: u64,  // Nanoseconds
     approval_grace_period: u64,     // Nanoseconds
     habits: UnorderedMap<AccountId, Vector<Habit>>,
-    beneficiaries: UnorderedMap<AccountId, Vec<AccountId>>,
+    beneficiaries: HashMap<AccountId, Vec<AccountId>>,
 }
 
 
@@ -43,7 +43,7 @@ impl Default for StickyHabitsContract {
             habit_acquisition_period: 21 * 24 * 3600 * 1000000000 as u64,
             approval_grace_period: 15 * 24 * 3600 * 1000000000 as u64,
             habits: UnorderedMap::new(b"d"),
-            beneficiaries: UnorderedMap::new(b"d"),
+            beneficiaries: HashMap::new(),
         }
     }
 }
@@ -61,7 +61,7 @@ impl StickyHabitsContract {
             habit_acquisition_period: u64::from(habit_acquisition_period),
             approval_grace_period: u64::from(approval_grace_period),
             habits: UnorderedMap::new(b"d"),
-            beneficiaries: UnorderedMap::new(b"d"),
+            beneficiaries: HashMap::new(),
         }
     }
 
@@ -91,7 +91,7 @@ impl StickyHabitsContract {
 
         // Check if any users assigned habits for beneficiary
         let beneficiary_users = match self.beneficiaries.get(&beneficiary) {
-            Some(v) => v,
+            Some(v) => v.to_vec(),
             None => Vec::new(),
         };
 
@@ -101,12 +101,14 @@ impl StickyHabitsContract {
                 Some(v) => v,
                 None => Vector::new(b"m"),
             };
-            let mut user_habits_v: Vec<Habit> = user_habits.iter()
+            let user_habits_v: Vec<Habit> = user_habits.iter()
                 .skip(from as usize)
                 .take(limit as usize)
                 .collect();
-            if user_habits_v.len() > 0 {
-                habits.append(&mut user_habits_v);
+            for habit in user_habits_v {
+                if habit.beneficiary == beneficiary {
+                    habits.push(habit);
+                }
             }
         }
 
@@ -159,9 +161,11 @@ impl StickyHabitsContract {
         self.habits.insert(&user, &existing_habits);
         self.balance += Balance::from(to_lock);
 
+        log!("Deposit of {} has been made for habit {}", to_lock, description);
+
         // Check if beneficiary has been assigned any users(habits) before
-        let mut beneficiary_users: Vec<AccountId> = match self.beneficiaries.get(&beneficiary) {
-            Some(v) => v,
+        let mut beneficiary_users = match self.beneficiaries.get(&beneficiary) {
+            Some(v) => v.to_vec(),
             None => Vec::new(),
         };
 
@@ -170,12 +174,11 @@ impl StickyHabitsContract {
             Some(_item) => (),
             None => {
                 // Add new or update beneficiary with this user
-                beneficiary_users.push(user);
-               // self.beneficiaries.insert(&beneficiary, &beneficiary_users);
+                beneficiary_users.push(user.clone());
+                self.beneficiaries.insert(beneficiary.clone(), beneficiary_users);
+                log!("User {} assigned to the beneficiary {}", user, beneficiary);
             }
         }
-
-        log!("Deposit of {} has been made for habit {}", to_lock, description);
     }
 
     #[payable]
@@ -315,8 +318,12 @@ mod tests {
 
         let posted_habit = &contract.get_habits_user(AccountId::from_str("roman").unwrap(),
                                                      None,None)[0];
+        let beneficiary_habit = &contract.get_habits_beneficiary(AccountId::from_str("adam").unwrap(),
+                                                    None,None)[0];
         assert_eq!(posted_habit.description, "Clean my keyboard once a week".to_string());
         assert_eq!(u128::from(posted_habit.deposit), 10 * NEAR - STORAGE_COST);
+        assert_eq!(beneficiary_habit.description, "Clean my keyboard once a week".to_string());
+
     }
 
     #[test]
