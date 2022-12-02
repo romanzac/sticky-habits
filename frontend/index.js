@@ -54,7 +54,7 @@ async function doUserAction(event) {
 
 // Get habits from the contract on chain
 async function fetchHabits() {
-  const wipHabits = await stickyHabits.getHabits();
+  const wipHabits = await stickyHabits.getUserHabits();
   console.log(wipHabits);
 
   document.getElementById('habits-table').innerHTML = ''
