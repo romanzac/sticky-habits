@@ -32,9 +32,6 @@ async function doUserAction(event) {
   event.preventDefault();
   const { description, deadline_extension, deposit, beneficiary } = event.target.elements;
 
-  // document.querySelector('#signed-in-flow main')
-  //   .classList.add('please-wait');
-
   try {
     await stickyHabits.addHabit(description.value, deadline_extension.value, deposit.value, beneficiary.value);
   } catch (e) {
@@ -46,19 +43,15 @@ async function doUserAction(event) {
     throw e
   }
 
- //  ===== Fetch the data from the blockchain =====
- //await fetchHabits();
- //  document.querySelector('#signed-in-flow main')
- //    .classList.remove('please-wait');
 }
 
 // Get habits from the contract on chain
 async function fetchHabits() {
   const userHabits = await stickyHabits.getUserHabits();
-  const beneficiaryHabits = await stickyHabits.getUserHabits();
+  const beneficiaryHabits = await stickyHabits.getBeneficiaryHabits();
   console.log(userHabits);
 
-  document.getElementById('habits-table').innerHTML = ''
+  document.getElementById('user-habits-table').innerHTML = ''
 
   userHabits.forEach(elem => {
     const depositinNear = utils.format.formatNearAmount(elem.deposit)

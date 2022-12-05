@@ -21,7 +21,7 @@ export class StickyHabits {
         const min = 0;
         const limit = 7;
         return await this.wallet.viewMethod({ contractId: this.contractId, method: 'get_habits_beneficiary',
-            args:{ user: this.wallet.accountId, from_index: min.toString(), limit_to: limit.toString() }});
+            args:{ beneficiary: this.wallet.accountId, from_index: min.toString(), limit_to: limit.toString() }});
 
     }
 
