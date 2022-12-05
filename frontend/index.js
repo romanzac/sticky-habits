@@ -54,12 +54,13 @@ async function doUserAction(event) {
 
 // Get habits from the contract on chain
 async function fetchHabits() {
-  const wipHabits = await stickyHabits.getUserHabits();
-  console.log(wipHabits);
+  const userHabits = await stickyHabits.getUserHabits();
+  const beneficiaryHabits = await stickyHabits.getUserHabits();
+  console.log(userHabits);
 
   document.getElementById('habits-table').innerHTML = ''
 
-  wipHabits.forEach(elem => {
+  userHabits.forEach(elem => {
     const depositinNear = utils.format.formatNearAmount(elem.deposit)
     const date = new Date(elem.deadline / 1000000);
     let tr = document.createElement('tr')
@@ -73,13 +74,29 @@ async function fetchHabits() {
         <td>${elem.approved}</td>
       </tr>
     `
-    document.getElementById('habits-table').appendChild(tr)
+    document.getElementById('user-habits-table').appendChild(tr)
   });
 
-  // document.querySelectorAll('[data-behavior=habits]').forEach(el => {
-  //   el.innerText = currentHabits.description;
-  //   el.value = currentHabits.deposit;
-  // });
+  document.getElementById('beneficiary-habits-table').innerHTML = ''
+
+  beneficiaryHabits.forEach(elem => {
+    const depositinNear = utils.format.formatNearAmount(elem.deposit)
+    const date = new Date(elem.deadline / 1000000);
+    let tr = document.createElement('tr')
+    tr.innerHTML = `
+      <tr>
+        <th scope="row">${elem.description}</th>
+        <td>${date}</td>
+        <td>${depositinNear}</td>
+        <td>${elem.beneficiary}</td>
+        <td>${elem.evidence}</td>
+        <td>${elem.approved}</td>
+      </tr>
+    `
+    document.getElementById('beneficiary-habits-table').appendChild(tr)
+  });
+
+
 }
 
 // Display the signed-out-flow container

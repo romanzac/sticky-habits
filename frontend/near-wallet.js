@@ -32,10 +32,10 @@ export class Wallet {
         this.createAccessKeyFor = createAccessKeyFor
         this.network = {
             networkId: "local",
-            nodeUrl: "http://127.0.0.1:8332",
-            helperUrl: "http://127.0.0.1:8330",
-            explorerUrl: "http://127.0.0.1:8331",
-            indexerUrl: "http://127.0.0.1:8333",
+            nodeUrl: "http://192.168.0.103:8332",
+            helperUrl: "http://192.168.0.103:8330",
+            explorerUrl: "http://192.168.0.103:8331",
+            indexerUrl: "http://192.168.0.103:8333",
         }
     }
 
@@ -43,7 +43,7 @@ export class Wallet {
     async startUp() {
         this.walletSelector = await setupWalletSelector({
             network: this.network,
-            modules: [setupMyNearWallet({ walletUrl: "http://127.0.0.1:8334", iconUrl: MyNearIconUrl }),
+            modules: [setupMyNearWallet({ walletUrl: "http://192.168.0.103:8334", iconUrl: MyNearIconUrl }),
                 setupLedger({ iconUrl: LedgerIconUrl })],
         });
 

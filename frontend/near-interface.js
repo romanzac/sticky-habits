@@ -17,6 +17,14 @@ export class StickyHabits {
 
     }
 
+    async getBeneficiaryHabits() {
+        const min = 0;
+        const limit = 7;
+        return await this.wallet.viewMethod({ contractId: this.contractId, method: 'get_habits_beneficiary',
+            args:{ user: this.wallet.accountId, from_index: min.toString(), limit_to: limit.toString() }});
+
+    }
+
     async addHabit(description, deadline_extension, deposit, beneficiary) {
         const depositInYocto = utils.format.parseNearAmount(deposit);
         const THIRTY_TGAS = '30000000000000';
