@@ -24,26 +24,20 @@ export class Wallet {
     network;
     createAccessKeyFor;
 
-    constructor({ createAccessKeyFor = undefined, network = 'local' }) {
+    constructor({ createAccessKeyFor = undefined, network = 'testnet' }) {
         // Login to a wallet passing a contractId will create a local
         // key, so the user skips signing non-payable transactions.
         // Omitting the accountId will result in the user being
         // asked to sign all transactions.
         this.createAccessKeyFor = createAccessKeyFor
-        this.network = {
-            networkId: "local",
-            nodeUrl: "http://127.0.0.1:8332",
-            helperUrl: "http://127.0.0.1:8330",
-            explorerUrl: "http://127.0.0.1:8331",
-            indexerUrl: "http://127.0.0.1:8333",
-        }
+        this.network = 'testnet'
     }
 
     // To be called when the website loads
     async startUp() {
         this.walletSelector = await setupWalletSelector({
             network: this.network,
-            modules: [setupMyNearWallet({ walletUrl: "http://127.0.0.1:8334", iconUrl: MyNearIconUrl }),
+            modules: [setupMyNearWallet({ iconUrl: MyNearIconUrl }),
                 setupLedger({ iconUrl: LedgerIconUrl })],
         });
 
@@ -75,10 +69,6 @@ export class Wallet {
     async viewMethod({ contractId, method, args = {} }) {
         const { network } = this.walletSelector.options;
         const provider = new providers.JsonRpcProvider({ url: network.nodeUrl });
-
-        console.log(network.nodeUrl);
-
-        console.log(contractId);
 
         let res = await provider.query({
             request_type: 'call_function',
