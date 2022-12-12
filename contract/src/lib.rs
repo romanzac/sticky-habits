@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::serde::{Serialize, Deserialize};
 use near_sdk::{env, AccountId, Balance, near_bindgen, log, Promise};
@@ -29,7 +28,7 @@ pub struct StickyHabitsContract {
     habit_acquisition_period: u64,  // Nanoseconds
     approval_grace_period: u64,     // Nanoseconds
     habits: UnorderedMap<AccountId, Vector<Habit>>,
-    beneficiaries: HashMap<AccountId, Vec<AccountId>>,
+    beneficiaries: UnorderedMap<AccountId, Vector<AccountId>>,
 }
 
 
@@ -42,8 +41,8 @@ impl Default for StickyHabitsContract {
             dev_fee: 5,
             habit_acquisition_period: 21 * 24 * 3600 * 1000000000 as u64,
             approval_grace_period: 15 * 24 * 3600 * 1000000000 as u64,
-            habits: UnorderedMap::new(b"d"),
-            beneficiaries: HashMap::new(),
+            habits: UnorderedMap::new(b"a"),
+            beneficiaries: UnorderedMap::new(b"b"),
         }
     }
 }
@@ -60,8 +59,8 @@ impl StickyHabitsContract {
             dev_fee: u64::from(dev_fee),
             habit_acquisition_period: u64::from(habit_acquisition_period),
             approval_grace_period: u64::from(approval_grace_period),
-            habits: UnorderedMap::new(b"d"),
-            beneficiaries: HashMap::new(),
+            habits: UnorderedMap::new(b"a"),
+            beneficiaries: UnorderedMap::new(b"b"),
         }
     }
 
@@ -72,7 +71,7 @@ impl StickyHabitsContract {
 
         let existing_habits = match self.habits.get(&user) {
             Some(v) => v,
-            None => Vector::new(b"m"),
+            None => Vector::new(b"v"),
         };
 
         existing_habits.iter()
@@ -91,15 +90,15 @@ impl StickyHabitsContract {
 
         // Check if any users assigned habits for beneficiary
         let beneficiary_users = match self.beneficiaries.get(&beneficiary) {
-            Some(v) => v.to_vec(),
-            None => Vec::new(),
+            Some(v) => v,
+            None => Vector::new(b"w"),
         };
 
         // Get habits from all related users
         for user in beneficiary_users.iter() {
             let user_habits = match self.habits.get(&user) {
                 Some(v) => v,
-                None => Vector::new(b"m"),
+                None => Vector::new(b"v"),
             };
             let user_habits_v: Vec<Habit> = user_habits.iter()
                 .skip(from as usize)
@@ -135,8 +134,8 @@ impl StickyHabitsContract {
 
         // Check if user has already any stored habits
         let mut existing_habits = match self.habits.get(&user) {
-            Some(i) => i,
-            None => Vector::new(b"m"),
+            Some(v) => v,
+            None => Vector::new(b"v"),
         };
 
         let to_lock: Balance = if existing_habits.len() == 0 {
@@ -165,17 +164,17 @@ impl StickyHabitsContract {
 
         // Check if beneficiary has been assigned any users(habits) before
         let mut beneficiary_users = match self.beneficiaries.get(&beneficiary) {
-            Some(v) => v.to_vec(),
-            None => Vec::new(),
+            Some(v) => v,
+            None => Vector::new(b"w"),
         };
 
         // Check/add user to the list for beneficiary if not present yet
-        match beneficiary_users.iter().find(|x| *x == &user) {
+        match beneficiary_users.iter().find(|x| *x == user) {
             Some(_item) => (),
             None => {
                 // Add new or update beneficiary with this user
-                beneficiary_users.push(user.clone());
-                self.beneficiaries.insert(beneficiary.clone(), beneficiary_users);
+                beneficiary_users.push(&user);
+                self.beneficiaries.insert(&beneficiary, &beneficiary_users);
                 log!("User {} assigned to the beneficiary {}", user, beneficiary);
             }
         }
@@ -190,7 +189,7 @@ impl StickyHabitsContract {
 
         let mut existing_habits = match self.habits.get(&user) {
             Some(v) => v,
-            None => Vector::new(b"m"),
+            None => Vector::new(b"v"),
         };
         if existing_habits.len() > index {
             match &mut existing_habits.get(index) {
@@ -212,7 +211,7 @@ impl StickyHabitsContract {
 
         let mut existing_habits = match self.habits.get(&user) {
             Some(v) => v,
-            None => Vector::new(b"m"),
+            None => Vector::new(b"v"),
         };
         if existing_habits.len() > index {
             match &mut existing_habits.get(index) {
@@ -239,7 +238,7 @@ impl StickyHabitsContract {
 
         let mut existing_habits = match self.habits.get(&user) {
             Some(v) => v,
-            None => Vector::new(b"m"),
+            None => Vector::new(b"v"),
         };
         if existing_habits.len() > index {
             match &mut existing_habits.get(index) {
