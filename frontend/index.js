@@ -11,8 +11,6 @@ const wallet = new Wallet({ createAccessKeyFor: CONTRACT_ADDRESS })
 // Logic for interacting with the contract
 const stickyHabits = new StickyHabits({ contractId: CONTRACT_ADDRESS, walletToUse: wallet });
 
-console.log(CONTRACT_ADDRESS);
-
 // Setup on page load
 window.onload = async () => {
   let isSignedIn = await wallet.startUp();
