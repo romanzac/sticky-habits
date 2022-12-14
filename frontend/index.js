@@ -53,6 +53,7 @@ async function fetchHabits() {
   const userHabits = await stickyHabits.getUserHabits();
   const beneficiaryHabits = await stickyHabits.getBeneficiaryHabits();
   console.log(userHabits);
+  console.log(beneficiaryHabits);
 
   document.getElementById('user-habits-table').innerHTML = ''
 

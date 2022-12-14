@@ -41,8 +41,8 @@ impl Default for StickyHabitsContract {
             dev_fee: 5,
             habit_acquisition_period: 21 * 24 * 3600 * 1000000000 as u64,
             approval_grace_period: 15 * 24 * 3600 * 1000000000 as u64,
-            habits: UnorderedMap::new(b"a"),
-            beneficiaries: UnorderedMap::new(b"b"),
+            habits: UnorderedMap::new(b"map-id-1".to_vec()),
+            beneficiaries: UnorderedMap::new(b"map-id-2".to_vec()),
         }
     }
 }
@@ -59,8 +59,8 @@ impl StickyHabitsContract {
             dev_fee: u64::from(dev_fee),
             habit_acquisition_period: u64::from(habit_acquisition_period),
             approval_grace_period: u64::from(approval_grace_period),
-            habits: UnorderedMap::new(b"a"),
-            beneficiaries: UnorderedMap::new(b"b"),
+            habits: UnorderedMap::new(b"map-id-1".to_vec()),
+            beneficiaries: UnorderedMap::new(b"map-id-2".to_vec()),
         }
     }
 
@@ -71,7 +71,7 @@ impl StickyHabitsContract {
 
         let existing_habits = match self.habits.get(&user) {
             Some(v) => v,
-            None => Vector::new(b"v"),
+            None => Vector::new(b"vector-id-1".to_vec()),
         };
 
         existing_habits.iter()
@@ -91,14 +91,14 @@ impl StickyHabitsContract {
         // Check if any users assigned habits for beneficiary
         let beneficiary_users = match self.beneficiaries.get(&beneficiary) {
             Some(v) => v,
-            None => Vector::new(b"w"),
+            None => Vector::new(b"vector-id-2".to_vec()),
         };
 
         // Get habits from all related users
         for user in beneficiary_users.iter() {
             let user_habits = match self.habits.get(&user) {
                 Some(v) => v,
-                None => Vector::new(b"v"),
+                None => Vector::new(b"vector-id-1".to_vec()),
             };
             let user_habits_v: Vec<Habit> = user_habits.iter()
                 .skip(from as usize)
@@ -125,6 +125,8 @@ impl StickyHabitsContract {
         log!("Adding new habit: {}", description);
         // Get who is calling the method and how much $NEAR they attached
         let user: AccountId = env::predecessor_account_id();
+        let user_str = user.as_str();
+        let beneficiary_str = beneficiary.as_str();
         let deposit: Balance = env::attached_deposit();
         let deadline = env::block_timestamp() + self.habit_acquisition_period +
             u64::from(deadline_extension);
@@ -135,7 +137,7 @@ impl StickyHabitsContract {
         // Check if user has already any stored habits
         let mut existing_habits = match self.habits.get(&user) {
             Some(v) => v,
-            None => Vector::new(b"v"),
+            None => Vector::new(("vector-h-id-".to_string() + user_str).as_bytes().to_vec())
         };
 
         let to_lock: Balance = if existing_habits.len() == 0 {
@@ -165,7 +167,7 @@ impl StickyHabitsContract {
         // Check if beneficiary has been assigned any users(habits) before
         let mut beneficiary_users = match self.beneficiaries.get(&beneficiary) {
             Some(v) => v,
-            None => Vector::new(b"w"),
+            None => Vector::new(("vector-b-id-".to_string() + beneficiary_str).as_bytes().to_vec())
         };
 
         // Check/add user to the list for beneficiary if not present yet
@@ -189,7 +191,7 @@ impl StickyHabitsContract {
 
         let mut existing_habits = match self.habits.get(&user) {
             Some(v) => v,
-            None => Vector::new(b"v"),
+            None => Vector::new(b"vector-id-1".to_vec()),
         };
         if existing_habits.len() > index {
             match &mut existing_habits.get(index) {
@@ -211,7 +213,7 @@ impl StickyHabitsContract {
 
         let mut existing_habits = match self.habits.get(&user) {
             Some(v) => v,
-            None => Vector::new(b"v"),
+            None => Vector::new(b"vector-id-1".to_vec()),
         };
         if existing_habits.len() > index {
             match &mut existing_habits.get(index) {
@@ -238,7 +240,7 @@ impl StickyHabitsContract {
 
         let mut existing_habits = match self.habits.get(&user) {
             Some(v) => v,
-            None => Vector::new(b"v"),
+            None => Vector::new(b"vector-id-1".to_vec()),
         };
         if existing_habits.len() > index {
             match &mut existing_habits.get(index) {
@@ -313,6 +315,13 @@ mod tests {
             "Clean my keyboard once a week".to_string(),
             U64(0),
             AccountId::from_str("adam").unwrap(),
+        );
+
+        set_context("adam", 10 * NEAR, 1664172263000000000);
+        contract.add_habit(
+            "Help father with car repair".to_string(),
+            U64(0),
+            AccountId::from_str("roman").unwrap(),
         );
 
         let posted_habit = &contract.get_habits_user(AccountId::from_str("roman").unwrap(),
