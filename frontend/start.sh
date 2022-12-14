@@ -6,8 +6,12 @@ NC='\033[0m' # No Color
 CONTRACT_DIRECTORY=../contract
 DEV_ACCOUNT_FILE="${CONTRACT_DIRECTORY}/neardev/dev-account.env"
 
+
+
 start () {
   echo The app is starting!
+  source $DEV_ACCOUNT_FILE
+  echo "$CONTRACT_NAME"
   env-cmd -f $DEV_ACCOUNT_FILE parcel index.html --open
 }
 

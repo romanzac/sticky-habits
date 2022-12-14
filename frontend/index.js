@@ -3,11 +3,15 @@ import { Wallet } from './near-wallet';
 import { StickyHabits } from './near-interface';
 import { utils } from "near-api-js";
 
-// Wallet instance
-const wallet = new Wallet({ createAccessKeyFor: process.env.CONTRACT_NAME })
+const CONTRACT_ADDRESS = process.env.CONTRACT_NAME;
 
-// Logic for interacting with the contract 
-const stickyHabits = new StickyHabits({ contractId: process.env.CONTRACT_NAME, walletToUse: wallet });
+// Wallet instance
+const wallet = new Wallet({ createAccessKeyFor: CONTRACT_ADDRESS })
+
+// Logic for interacting with the contract
+const stickyHabits = new StickyHabits({ contractId: CONTRACT_ADDRESS, walletToUse: wallet });
+
+console.log(CONTRACT_ADDRESS);
 
 // Setup on page load
 window.onload = async () => {
@@ -16,6 +20,7 @@ window.onload = async () => {
   if (isSignedIn) {
     signedInFlow();
     await fetchHabits();
+
   } else {
     signedOutFlow();
   }
