@@ -231,3 +231,17 @@ main.please-wait .loader:after{
     transform: rotate(360deg);
   }
 }
+
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+  width: 100%;
+  border: none;
+}
+
+th, td {
+  text-align: left;
+  padding: 8px;
+}
+
+tr:nth-child(even){background-color: #616A6B }
