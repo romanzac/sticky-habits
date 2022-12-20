@@ -41,6 +41,7 @@ integration-tests/rs/target
 
 # local env files
 .env*.local
+.env*
 
 # vercel
 .vercel
