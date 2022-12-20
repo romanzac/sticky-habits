@@ -1,15 +1,19 @@
 import React, { useState } from "react";
 import { Todo, TodoUpdate } from "../todo";
+import { Habit, HabitUpdate } from "../habit";
 import Footer from "./footer";
 import TodoList from "./todo-list";
+import HabitList from "./habit-list";
 
 const MainSection = ({
   todos,
+  habits,
   onUpdateTodo,
   onDeleteTodos,
   onCompleteTodos,
 }: {
   todos: Todo[];
+  habits: Habit[];
   onUpdateTodo: (update: TodoUpdate) => void;
   onDeleteTodos: (ids: string[]) => void;
   onCompleteTodos: (completed: boolean, ids: string[]) => void;
@@ -58,6 +62,9 @@ const MainSection = ({
         todos={filteredTodos}
         onUpdateTodo={onUpdateTodo}
         onDeleteTodo={(id) => onDeleteTodos([id])}
+      />
+      <HabitList
+        habits={habits}
       />
       {todos.length > 0 && (
         <Footer

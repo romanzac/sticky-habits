@@ -30,9 +30,8 @@ const App = ({ rep }: { rep: Replicache<M> }) => {
   // Logic for interacting with the contract
   const stickyHabits = new StickyHabits({ contractId: CONTRACT_ADDRESS, walletToUse: wallet });
 
-
   // Get all habits
-  const habits = useSubscribe(rep, listTodos, [], [rep]);
+  const habits = listHabits(stickyHabits);
 
   // Define event handlers and connect them to Replicache mutators. Each
   // of these mutators runs immediately (optimistically) locally, then runs
@@ -69,6 +68,7 @@ const App = ({ rep }: { rep: Replicache<M> }) => {
       <Header onNewItem={handleNewItem} />
       <MainSection
         todos={todos}
+        habits={habits}
         onUpdateTodo={handleUpdateTodo}
         onDeleteTodos={handleDeleteTodos}
         onCompleteTodos={handleCompleteTodos}
