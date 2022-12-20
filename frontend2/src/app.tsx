@@ -3,8 +3,13 @@ import React from "react";
 import { Replicache } from "replicache";
 import { useSubscribe } from "replicache-react";
 
+import { Wallet } from './near-wallet';
+import { StickyHabits } from './near-interface';
+
 import { M } from "./mutators";
 import { listTodos, TodoUpdate } from "./todo";
+
+import { listHabits, HabitUpdate } from "./habit";
 
 import Header from "./components/header";
 import MainSection from "./components/main-section";
@@ -15,6 +20,19 @@ const App = ({ rep }: { rep: Replicache<M> }) => {
   // Subscribe to all todos and sort them.
   const todos = useSubscribe(rep, listTodos, [], [rep]);
   todos.sort((a, b) => a.sort - b.sort);
+
+  const CONTRACT_ADDRESS: string = process.env.CONTRACT_NAME!;
+
+  // Wallet instance
+  // @ts-ignore
+  const wallet = new Wallet({ createAccessKeyFor: CONTRACT_ADDRESS })
+
+  // Logic for interacting with the contract
+  const stickyHabits = new StickyHabits({ contractId: CONTRACT_ADDRESS, walletToUse: wallet });
+
+
+  // Get all habits
+  const habits = useSubscribe(rep, listTodos, [], [rep]);
 
   // Define event handlers and connect them to Replicache mutators. Each
   // of these mutators runs immediately (optimistically) locally, then runs
