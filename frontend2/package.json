@@ -1,23 +1,66 @@
 {
-  "name": "my-app",
-  "version": "0.1.0",
+  "name": "replicache-todo",
+  "version": "0.2.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "format": "prettier --write './**/*.{js,jsx,json,ts,tsx,html,css,md}'"
   },
   "dependencies": {
-    "@next/font": "13.0.7",
-    "@types/node": "18.11.17",
-    "@types/react": "18.0.26",
-    "@types/react-dom": "18.0.9",
-    "eslint": "8.30.0",
-    "eslint-config-next": "13.0.7",
-    "next": "13.0.7",
-    "react": "18.2.0",
-    "react-dom": "18.2.0",
-    "typescript": "4.9.4"
+    "classnames": "^2.3.1",
+    "next": "^12.1.6",
+    "react": "17.0.2",
+    "react-dom": "17.0.2",
+    "replicache": "^11.0.0",
+    "replicache-nextjs": "^0.2.0",
+    "replicache-react": "^2.7.0",
+    "todomvc-app-css": "^2.4.2",
+    "zod": "^3.20.2",
+    "pg-mem": "^2.6.4",
+    "@supabase/supabase-js": "^2.2.1"
+  },
+  "devDependencies": {
+    "@types/node": "^14.14.37",
+    "@types/react": "^17.0.11",
+    "prettier": "^2.2.1",
+    "ts-node": "^10.7.0",
+    "typescript": "^4.7.4"
+  },
+  "eslintConfig": {
+    "ecmaFeatures": {
+      "jsx": true,
+      "modules": true
+    },
+    "env": {
+      "browser": true,
+      "node": true
+    },
+    "parser": "babel-eslint",
+    "rules": {
+      "quotes": [
+        2,
+        "single"
+      ],
+      "strict": [
+        2,
+        "never"
+      ],
+      "react/jsx-uses-react": 2,
+      "react/jsx-uses-vars": 2,
+      "react/react-in-jsx-scope": 2
+    },
+    "plugins": [
+      "react"
+    ]
+  },
+  "prettier": {
+    "singleQuote": false,
+    "trailingComma": "es5",
+    "arrowParens": "always",
+    "bracketSpacing": true,
+    "tabWidth": 2,
+    "useTabs": false
   }
 }

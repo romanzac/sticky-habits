@@ -1,34 +1,32 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Replicache Vercel Template
 
-## Getting Started
+Replicache is a framework for creating multiplayer web applications.
 
-First, run the development server:
+Replicache enables:
 
-```bash
-npm run dev
-# or
-yarn dev
-```
+* **Realtime collaboration:** Users see each others' changes as they happen, without any reloads.
+* **Instant UI:** The UI responds to changes instantly, without waiting for server round trips. Everything is optimistic, automatically.
+* **Offline resilience:** Applications can go offline for minutes or hours and sync up smoothly when they come back online.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+To learn more about Replicache, see [replicache.dev](https://replicache.dev/).
 
-You can start editing the page by modifying `pages/index.tsx`. The page auto-updates as you edit the file.
+This template creates a full Replicache-powered todo list powered by Vercel, Next.js, and [Supabase](https://supabase.com/). You can use this as the basis for your own Replicache powered app.
 
-[API routes](https://nextjs.org/docs/api-routes/introduction) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.ts`.
+## Install
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/api-routes/introduction) instead of React pages.
+### Step 1: Create Supabase Project
 
-## Learn More
+- Create a new project at [Supabase](https://supabase.com/).
+- ***Important: Don't forget to copy the password you choose to some scratch file.*** You'll need that later and can't retrieve it after this screen.
 
-To learn more about Next.js, take a look at the following resources:
+### Step 2: Deploy this Template
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- When you get to the Replicache integration you'll have to provide the database password you saved in step 1.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+## Documentation
 
-## Deploy on Vercel
+You can find the complete Replicache documentation at https://doc.replicache.dev/.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Get Help
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+Come say hi on [Discord](https://discord.replicache.dev/)! We're happy to help you get setup and answer questions.
