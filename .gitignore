@@ -49,3 +49,6 @@ integration-tests/rs/target
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Next
+.next
