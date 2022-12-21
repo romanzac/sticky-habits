@@ -19,7 +19,19 @@
     "todomvc-app-css": "^2.4.2",
     "zod": "^3.20.2",
     "pg-mem": "^2.6.4",
-    "@supabase/supabase-js": "^2.2.1"
+    "@supabase/supabase-js": "^2.2.1",
+    "@near-wallet-selector/core": "^7.3.0",
+    "@near-wallet-selector/ledger": "^7.3.0",
+    "@near-wallet-selector/math-wallet": "^7.3.0",
+    "@near-wallet-selector/meteor-wallet": "^7.3.0",
+    "@near-wallet-selector/modal-ui": "^7.3.0",
+    "@near-wallet-selector/my-near-wallet": "^7.3.0",
+    "@near-wallet-selector/near-wallet": "^7.3.0",
+    "@near-wallet-selector/nightly": "^7.3.0",
+    "@near-wallet-selector/nightly-connect": "^7.3.0",
+    "@near-wallet-selector/sender": "^7.3.0",
+    "@near-wallet-selector/wallet-connect": "^7.3.0",
+    "near-api-js": "^1.1.0"
   },
   "devDependencies": {
     "@types/node": "^14.14.37",

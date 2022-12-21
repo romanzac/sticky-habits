@@ -2,6 +2,7 @@
 // function to get all Habits.
 
 import { StickyHabits } from "./near-interface";
+import HabitList from "./components/habit-list";
 
 export type Habit = {
   description: string,
@@ -15,6 +16,10 @@ export type Habit = {
 
 export type HabitUpdate = Partial<Habit> & Pick<Habit, "description">;
 
-export async function listHabits(contract: StickyHabits) {
-  return await contract.getUserHabits();
+export function listHabits(contract: StickyHabits) {
+  let result: Habit[] = [];
+  contract.getUserHabits().then(res => {
+    result = res;
+  });
+  return result
 }
