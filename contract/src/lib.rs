@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::serde::{Serialize, Deserialize};
 use near_sdk::{env, AccountId, Balance, near_bindgen, log, Promise};
@@ -24,9 +25,9 @@ pub struct Habit {
 pub struct StickyHabitsContract {
     owner: AccountId,
     balance: Balance,
-    dev_fee: u64,                   // percent
-    habit_acquisition_period: u64,  // Nanoseconds
-    approval_grace_period: u64,     // Nanoseconds
+    dev_fee: u64,                                   // percent
+    habit_acquisition_period: u64,                  // Nanoseconds
+    approval_grace_period: u64,                     // Nanoseconds
     habits: UnorderedMap<AccountId, Vector<Habit>>,
     beneficiaries: UnorderedMap<AccountId, Vector<AccountId>>,
 }
@@ -51,7 +52,12 @@ impl Default for StickyHabitsContract {
 impl StickyHabitsContract {
     #[init]
     #[private]
-    pub fn init(owner: AccountId, dev_fee: U64, habit_acquisition_period: U64, approval_grace_period: U64) -> Self {
+    pub fn init(
+        owner: AccountId,
+        dev_fee: U64,
+        habit_acquisition_period: U64,
+        approval_grace_period: U64,
+    ) -> Self {
         assert!(!env::state_exists(), "Already initialized");
         Self {
             owner,
@@ -65,7 +71,12 @@ impl StickyHabitsContract {
     }
 
     // Returns an array of habits for the user with from and limit parameters.
-    pub fn get_habits_user(&self, user: AccountId, from_index: Option<U128>, limit_to: Option<U64>) -> Vec<Habit> {
+    pub fn get_habits_user(
+        &self,
+        user: AccountId,
+        from_index: Option<U128>,
+        limit_to: Option<U64>,
+    ) -> Vec<Habit> {
         let from = u128::from(from_index.unwrap_or(U128(0)));
         let limit = u64::from(limit_to.unwrap_or(U64(1)));
 
@@ -75,43 +86,44 @@ impl StickyHabitsContract {
         };
 
         existing_habits.iter()
-                .skip(from as usize)
-                .take(limit as usize)
-                .collect()
-
+            .skip(from as usize)
+            .take(limit as usize)
+            .collect()
     }
 
-    // Returns an array of habits of beneficiary's friends with from and limit parameters.
-    pub fn get_habits_beneficiary(&self, beneficiary: AccountId, from_index: Option<U128>, limit_to: Option<U64>) -> Vec<Habit> {
+    // Returns a map of habits of beneficiary's friends with from and limit parameters.
+    pub fn get_habits_beneficiary(
+        &self,
+        beneficiary: AccountId,
+        from_index: Option<U128>,
+        limit_to: Option<U64>,
+    ) -> HashMap<AccountId, Vec<Habit>> {
         let from = u128::from(from_index.unwrap_or(U128(0)));
         let limit = u64::from(limit_to.unwrap_or(U64(1)));
 
-        let mut habits: Vec<Habit> = Vec::new();
+        let mut friends_habits: HashMap<AccountId, Vec<Habit>> = HashMap::new();
 
-        // Check if any users assigned habits for beneficiary
+        // Get users associated with beneficiary
         let beneficiary_users = match self.beneficiaries.get(&beneficiary) {
             Some(v) => v,
             None => Vector::new(b"vector-id-2".to_vec()),
         };
 
-        // Get habits from all related users
+        // Get habits from all associated users and filter them to those belonging to beneficiary
         for user in beneficiary_users.iter() {
             let user_habits = match self.habits.get(&user) {
                 Some(v) => v,
                 None => Vector::new(b"vector-id-1".to_vec()),
             };
-            let user_habits_v: Vec<Habit> = user_habits.iter()
+            let user_habits_filtered: Vec<Habit> = user_habits.iter()
                 .skip(from as usize)
                 .take(limit as usize)
+                .filter(|b| b.beneficiary == beneficiary)
                 .collect();
-            for habit in user_habits_v {
-                if habit.beneficiary == beneficiary {
-                    habits.push(habit);
-                }
-            }
+            friends_habits.insert(user, user_habits_filtered);
         }
 
-        habits
+        friends_habits
     }
 
     // Returns actual contract balance
@@ -121,7 +133,12 @@ impl StickyHabitsContract {
     }
 
     #[payable]
-    pub fn add_habit(&mut self, description: String, deadline_extension: U64, beneficiary: AccountId) {
+    pub fn add_habit(
+        &mut self,
+        description: String,
+        deadline_extension: U64,
+        beneficiary: AccountId,
+    ) {
         log!("Adding new habit: {}", description);
         // Get who is calling the method and how much $NEAR they attached
         let user: AccountId = env::predecessor_account_id();
@@ -183,7 +200,11 @@ impl StickyHabitsContract {
     }
 
     #[payable]
-    pub fn update_evidence(&mut self, at_index: U64, evidence: String) {
+    pub fn update_evidence(
+        &mut self,
+        at_index: U64,
+        evidence: String,
+    ) {
         let index = u64::from(at_index);
         let user: AccountId = env::predecessor_account_id();
 
@@ -206,7 +227,11 @@ impl StickyHabitsContract {
 
     // Beneficiary sets habit's flag to approved after evidence review
     #[payable]
-    pub fn approve_habit(&mut self, user: AccountId, at_index: U64) -> bool {
+    pub fn approve_habit(
+        &mut self,
+        user: AccountId,
+        at_index: U64,
+    ) -> bool {
         let index = u64::from(at_index);
         let beneficiary: AccountId = env::predecessor_account_id();
         let current_time = env::block_timestamp();
@@ -233,7 +258,11 @@ impl StickyHabitsContract {
     }
 
     #[payable]
-    pub fn unlock_deposit(&mut self, user: AccountId, at_index: U64) -> String {
+    pub fn unlock_deposit(
+        &mut self,
+        user: AccountId,
+        at_index: U64,
+    ) -> String {
         let index = u64::from(at_index);
         let account: AccountId = env::predecessor_account_id();
         let current_time = env::block_timestamp();
@@ -287,7 +316,11 @@ mod tests {
     const NEAR: u128 = 1000000000000000000000000;
 
     // Auxiliary fn: create a mock context
-    fn set_context(predecessor: &str, amount: Balance, timestamp: u64) {
+    fn set_context(
+        predecessor: &str,
+        amount: Balance,
+        timestamp: u64,
+    ) {
         let mut builder = VMContextBuilder::new();
         builder.predecessor_account_id(predecessor.parse().unwrap());
         builder.attached_deposit(amount);
@@ -325,13 +358,16 @@ mod tests {
         );
 
         let posted_habit = &contract.get_habits_user(AccountId::from_str("roman").unwrap(),
-                                                     None,None)[0];
-        let beneficiary_habit = &contract.get_habits_beneficiary(AccountId::from_str("adam").unwrap(),
-                                                    None,None)[0];
+                                                     None, None)[0];
+
+        let friends_habits = contract.get_habits_beneficiary(
+            AccountId::from_str("adam").unwrap(),
+            None, None);
+        let romans_habits = friends_habits.get(&AccountId::from_str("roman").unwrap()).unwrap();
+
         assert_eq!(posted_habit.description, "Clean my keyboard once a week".to_string());
         assert_eq!(u128::from(posted_habit.deposit), 10 * NEAR - STORAGE_COST);
-        assert_eq!(beneficiary_habit.description, "Clean my keyboard once a week".to_string());
-
+        assert_eq!(romans_habits[0].description, "Clean my keyboard once a week".to_string());
     }
 
     #[test]
