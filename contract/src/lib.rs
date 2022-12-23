@@ -5,7 +5,7 @@ use near_sdk::{env, AccountId, Balance, near_bindgen, log, Promise};
 use near_sdk::collections::{UnorderedMap, Vector};
 use near_sdk::json_types::{U128, U64};
 
-pub const STORAGE_COST: u128 = 10_000_000_000_000_000_000_000;
+pub const STORAGE_COST: u128 = 1_000_000_000_000_000_000_000;
 
 
 #[near_bindgen]
@@ -70,6 +70,195 @@ impl StickyHabitsContract {
         }
     }
 
+    // Adds new habit for the user and links user to his beneficiary
+    #[payable]
+    pub fn add_habit(
+        &mut self,
+        description: String,
+        deadline_extension: U64,
+        beneficiary: AccountId,
+    ) {
+        log!("Adding new habit: {}", description);
+        // Get who is calling the method and how much $NEAR they attached
+        let user: AccountId = env::predecessor_account_id();
+        let user_str = user.as_str();
+        let beneficiary_str = beneficiary.as_str();
+        let deposit: Balance = env::attached_deposit();
+        let deadline = env::block_timestamp() + self.habit_acquisition_period +
+            u64::from(deadline_extension);
+
+        // Check if user is different from beneficiary
+        assert_ne!(user, beneficiary, "User and Beneficiary should be different accounts");
+
+        // Check if user has already any stored habits, if not create new vector
+        let mut existing_habits = match self.habits.get(&user) {
+            Some(v) => v,
+            None => Vector::new(("vector-h-id-".to_string() + user_str).as_bytes().to_vec())
+        };
+
+        let to_lock: Balance = if existing_habits.len() == 0 {
+            // This is the user's first deposit, lets register it, which increases storage
+            assert!(deposit > STORAGE_COST, "Attach at least {} yoctoNEAR", STORAGE_COST);
+
+            // Subtract the storage cost to the amount to transfer
+            deposit - STORAGE_COST
+        } else {
+            deposit
+        };
+
+        existing_habits.push(&Habit {
+            description: description.clone(),
+            deadline: U64(deadline),
+            deposit: U128(to_lock),
+            beneficiary: beneficiary.clone(),
+            evidence: "".to_string(),
+            approved: false,
+        });
+
+        self.habits.insert(&user, &existing_habits);
+        self.balance += Balance::from(to_lock);
+
+        log!("Deposit of {} has been made for habit {}", to_lock, description);
+
+        // Check if beneficiary has been assigned any users(habits) before, if not create new vector
+        let mut beneficiary_users = match self.beneficiaries.get(&beneficiary) {
+            Some(v) => v,
+            None => Vector::new(("vector-b-id-".to_string() + beneficiary_str).as_bytes().to_vec())
+        };
+
+        // Link user with the beneficiary if not already present
+        match beneficiary_users.iter().find(|x| *x == user) {
+            Some(_item) => (),
+            None => {
+                // Add new or update beneficiary with this user
+                beneficiary_users.push(&user);
+                self.beneficiaries.insert(&beneficiary, &beneficiary_users);
+                log!("User {} assigned to the beneficiary {}", user, beneficiary);
+            }
+        }
+    }
+
+    // Adds a single link to the video or image content or cloud storage folder
+    #[payable]
+    pub fn update_evidence(
+        &mut self,
+        at_index: U64,
+        evidence: String,
+    ) {
+        let index = u64::from(at_index);
+        let user: AccountId = env::predecessor_account_id();
+
+        log!("Updating habit evidence for user {}", user);
+
+        let mut existing_habits = match self.habits.get(&user) {
+            Some(v) => v,
+            None => {
+                panic!("User {} has no habit yet", user);
+            },
+        };
+        if existing_habits.len() > index {
+            match &mut existing_habits.get(index) {
+                Some(habit) => {
+                    habit.evidence = evidence;
+                    let _evicted = existing_habits.replace(index, habit);
+                }
+                None => (),
+            };
+        } else {
+            panic!("Index {} is out of range", index);
+        }
+    }
+
+    // Beneficiary approves habit by setting "approved" flag to true
+    #[payable]
+    pub fn approve_habit(
+        &mut self,
+        user: AccountId,
+        at_index: U64,
+    ) -> bool {
+        let index = u64::from(at_index);
+        let beneficiary: AccountId = env::predecessor_account_id();
+        let current_time = env::block_timestamp();
+
+        let mut existing_habits = match self.habits.get(&user) {
+            Some(v) => v,
+            None => {
+                panic!("User {} has no habit yet", user);
+            },
+        };
+        if existing_habits.len() > index {
+            match &mut existing_habits.get(index) {
+                Some(habit) => {
+                    if habit.beneficiary == beneficiary &&
+                        u64::from(habit.deadline) < current_time &&
+                        u64::from(habit.deadline) + self.approval_grace_period > current_time
+                    {
+                        habit.approved = true;
+                        let _evicted = existing_habits.replace(index, habit);
+                        return true;
+                    }
+                }
+                None => (),
+            };
+        } else {
+            panic!("Index {} is out of range", index);
+        }
+        false
+    }
+
+    #[payable]
+    pub fn unlock_deposit(
+        &mut self,
+        user: AccountId,
+        at_index: U64,
+    ) -> String {
+        let index = u64::from(at_index);
+        let account: AccountId = env::predecessor_account_id();
+        let current_time = env::block_timestamp();
+
+        let mut existing_habits = match self.habits.get(&user) {
+            Some(v) => v,
+            None => {
+                panic!("User {} has no habit yet", user);
+            },
+        };
+        if existing_habits.len() > index {
+            match &mut existing_habits.get(index) {
+                Some(habit) => {
+                    // Return all deposit to user if conditions met
+                    if account == user && habit.approved &&
+                        u64::from(habit.deadline) + self.approval_grace_period < current_time
+                    {
+                        Promise::new(account.clone()).transfer(u128::from(habit.deposit));
+                        self.balance -= u128::from(habit.deposit);
+                        habit.deposit = U128(0);
+                        let _evicted = existing_habits.replace(index, habit);
+                        return user.to_string();
+                    }
+                    // Split deposit between developer and beneficiary if conditions met
+                    if account == habit.beneficiary && !habit.approved &&
+                        u64::from(habit.deadline) + self.approval_grace_period < current_time
+                    {
+                        let to_beneficiary = u128::from(habit.deposit) / (100 - self.dev_fee as u128);
+                        let to_developer = u128::from(habit.deposit) - to_beneficiary;
+                        Promise::new(account.clone()).transfer(to_beneficiary);
+                        Promise::new(self.owner.clone()).transfer(to_developer);
+
+                        self.balance -= u128::from(habit.deposit);
+                        habit.deposit = U128(0);
+                        let _evicted = existing_habits.replace(index, habit);
+                        return account.to_string();
+                    }
+                }
+                None => (),
+            };
+        } else {
+            panic!("Index {} is out of range", index);
+        }
+
+        "".to_string()
+    }
+
     // Returns an array of habits for the user with from and limit parameters.
     pub fn get_habits_user(
         &self,
@@ -132,175 +321,25 @@ impl StickyHabitsContract {
         U64(self.balance as u64)
     }
 
-    #[payable]
-    pub fn add_habit(
+    // Returns user habit at index to be updated internally
+    fn get_user_habit_at_index(
         &mut self,
-        description: String,
-        deadline_extension: U64,
-        beneficiary: AccountId,
-    ) {
-        log!("Adding new habit: {}", description);
-        // Get who is calling the method and how much $NEAR they attached
-        let user: AccountId = env::predecessor_account_id();
-        let user_str = user.as_str();
-        let beneficiary_str = beneficiary.as_str();
-        let deposit: Balance = env::attached_deposit();
-        let deadline = env::block_timestamp() + self.habit_acquisition_period +
-            u64::from(deadline_extension);
-
-        // Check if user is different from beneficiary
-        assert_ne!(user, beneficiary, "User and Beneficiary should be different accounts");
-
-        // Check if user has already any stored habits
-        let mut existing_habits = match self.habits.get(&user) {
+        user: AccountId,
+        index: u64,
+    ) -> Habit {
+        let existing_habits = match self.habits.get(&user) {
             Some(v) => v,
-            None => Vector::new(("vector-h-id-".to_string() + user_str).as_bytes().to_vec())
-        };
-
-        let to_lock: Balance = if existing_habits.len() == 0 {
-            // This is the user's first deposit, lets register it, which increases storage
-            assert!(deposit > STORAGE_COST, "Attach at least {} yoctoNEAR", STORAGE_COST);
-
-            // Subtract the storage cost to the amount to transfer
-            deposit - STORAGE_COST
-        } else {
-            deposit
-        };
-
-        existing_habits.push(&Habit {
-            description: description.clone(),
-            deadline: U64(deadline),
-            deposit: U128(to_lock),
-            beneficiary: beneficiary.clone(),
-            evidence: "".to_string(),
-            approved: false,
-        });
-
-        self.habits.insert(&user, &existing_habits);
-        self.balance += Balance::from(to_lock);
-
-        log!("Deposit of {} has been made for habit {}", to_lock, description);
-
-        // Check if beneficiary has been assigned any users(habits) before
-        let mut beneficiary_users = match self.beneficiaries.get(&beneficiary) {
-            Some(v) => v,
-            None => Vector::new(("vector-b-id-".to_string() + beneficiary_str).as_bytes().to_vec())
-        };
-
-        // Check/add user to the list for beneficiary if not present yet
-        match beneficiary_users.iter().find(|x| *x == user) {
-            Some(_item) => (),
             None => {
-                // Add new or update beneficiary with this user
-                beneficiary_users.push(&user);
-                self.beneficiaries.insert(&beneficiary, &beneficiary_users);
-                log!("User {} assigned to the beneficiary {}", user, beneficiary);
+                panic!("User {} has no habit yet", user);
+            },
+        };
+        let habit = match existing_habits.get(index) {
+            Some(h) => h,
+            None => {
+                panic!("Index {} is out of range", index);
             }
-        }
-    }
-
-    #[payable]
-    pub fn update_evidence(
-        &mut self,
-        at_index: U64,
-        evidence: String,
-    ) {
-        let index = u64::from(at_index);
-        let user: AccountId = env::predecessor_account_id();
-
-        log!("Updating habit evidence for user {}", user);
-
-        let mut existing_habits = match self.habits.get(&user) {
-            Some(v) => v,
-            None => Vector::new(b"vector-id-1".to_vec()),
         };
-        if existing_habits.len() > index {
-            match &mut existing_habits.get(index) {
-                Some(habit) => {
-                    habit.evidence = evidence;
-                    let _evicted = existing_habits.replace(index, habit);
-                }
-                None => (),
-            };
-        }
-    }
-
-    // Beneficiary sets habit's flag to approved after evidence review
-    #[payable]
-    pub fn approve_habit(
-        &mut self,
-        user: AccountId,
-        at_index: U64,
-    ) -> bool {
-        let index = u64::from(at_index);
-        let beneficiary: AccountId = env::predecessor_account_id();
-        let current_time = env::block_timestamp();
-
-        let mut existing_habits = match self.habits.get(&user) {
-            Some(v) => v,
-            None => Vector::new(b"vector-id-1".to_vec()),
-        };
-        if existing_habits.len() > index {
-            match &mut existing_habits.get(index) {
-                Some(habit) => {
-                    if habit.beneficiary == beneficiary &&
-                        u64::from(habit.deadline) < current_time &&
-                        u64::from(habit.deadline) + self.approval_grace_period > current_time {
-                        habit.approved = true;
-                        let _evicted = existing_habits.replace(index, habit);
-                        return true;
-                    }
-                }
-                None => (),
-            };
-        }
-        false
-    }
-
-    #[payable]
-    pub fn unlock_deposit(
-        &mut self,
-        user: AccountId,
-        at_index: U64,
-    ) -> String {
-        let index = u64::from(at_index);
-        let account: AccountId = env::predecessor_account_id();
-        let current_time = env::block_timestamp();
-
-        let mut existing_habits = match self.habits.get(&user) {
-            Some(v) => v,
-            None => Vector::new(b"vector-id-1".to_vec()),
-        };
-        if existing_habits.len() > index {
-            match &mut existing_habits.get(index) {
-                Some(habit) => {
-                    // Return all deposit to user if conditions met
-                    if account == user && habit.approved &&
-                        u64::from(habit.deadline) + self.approval_grace_period < current_time {
-                        Promise::new(account.clone()).transfer(u128::from(habit.deposit));
-                        self.balance -= u128::from(habit.deposit);
-                        habit.deposit = U128(0);
-                        let _evicted = existing_habits.replace(index, habit);
-                        return user.to_string();
-                    }
-                    // Split deposit between developer and beneficiary if conditions met
-                    if account == habit.beneficiary && !habit.approved &&
-                        u64::from(habit.deadline) + self.approval_grace_period < current_time {
-                        let to_beneficiary = u128::from(habit.deposit) / (100 - self.dev_fee as u128);
-                        let to_developer = u128::from(habit.deposit) - to_beneficiary;
-                        Promise::new(account.clone()).transfer(to_beneficiary);
-                        Promise::new(self.owner.clone()).transfer(to_developer);
-
-                        self.balance -= u128::from(habit.deposit);
-                        habit.deposit = U128(0);
-                        let _evicted = existing_habits.replace(index, habit);
-                        return account.to_string();
-                    }
-                }
-                None => (),
-            };
-        }
-        "".to_string()
+        habit
     }
 }
 
