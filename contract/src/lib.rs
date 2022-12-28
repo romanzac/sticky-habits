@@ -156,17 +156,14 @@ impl StickyHabitsContract {
                 panic!("User {} has no habit yet", user);
             },
         };
-        if existing_habits.len() > index {
-            match &mut existing_habits.get(index) {
-                Some(habit) => {
-                    habit.evidence = evidence;
-                    let _evicted = existing_habits.replace(index, habit);
-                }
-                None => (),
-            };
-        } else {
-            panic!("Index {} is out of range", index);
-        }
+
+        match &mut existing_habits.get(index) {
+            Some(habit) => {
+                habit.evidence = evidence;
+                let _updated = existing_habits.replace(index, habit);
+            }
+            None => panic!("Index {} is out of range", index),
+        };
     }
 
     // Beneficiary approves habit by setting "approved" flag to true
@@ -186,23 +183,23 @@ impl StickyHabitsContract {
                 panic!("User {} has no habit yet", user);
             },
         };
-        if existing_habits.len() > index {
-            match &mut existing_habits.get(index) {
-                Some(habit) => {
-                    if habit.beneficiary == beneficiary &&
-                        u64::from(habit.deadline) < current_time &&
-                        u64::from(habit.deadline) + self.approval_grace_period > current_time
-                    {
-                        habit.approved = true;
-                        let _evicted = existing_habits.replace(index, habit);
-                        return true;
-                    }
+
+        match &mut existing_habits.get(index) {
+            Some(habit) => {
+                let orig_deadline = u64::from(habit.deadline);
+
+                if habit.beneficiary == beneficiary &&
+                    orig_deadline < current_time &&
+                    orig_deadline + self.approval_grace_period > current_time
+                {
+                    habit.approved = true;
+                    let _updated = existing_habits.replace(index, habit);
+                    return true;
                 }
-                None => (),
-            };
-        } else {
-            panic!("Index {} is out of range", index);
-        }
+            }
+            None => panic!("Index {} is out of range", index),
+        };
+
         false
     }
 
@@ -222,39 +219,39 @@ impl StickyHabitsContract {
                 panic!("User {} has no habit yet", user);
             },
         };
-        if existing_habits.len() > index {
-            match &mut existing_habits.get(index) {
-                Some(habit) => {
-                    // Return all deposit to user if conditions met
-                    if account == user && habit.approved &&
-                        u64::from(habit.deadline) + self.approval_grace_period < current_time
-                    {
-                        Promise::new(account.clone()).transfer(u128::from(habit.deposit));
-                        self.balance -= u128::from(habit.deposit);
-                        habit.deposit = U128(0);
-                        let _evicted = existing_habits.replace(index, habit);
-                        return user.to_string();
-                    }
-                    // Split deposit between developer and beneficiary if conditions met
-                    if account == habit.beneficiary && !habit.approved &&
-                        u64::from(habit.deadline) + self.approval_grace_period < current_time
-                    {
-                        let to_beneficiary = u128::from(habit.deposit) / (100 - self.dev_fee as u128);
-                        let to_developer = u128::from(habit.deposit) - to_beneficiary;
-                        Promise::new(account.clone()).transfer(to_beneficiary);
-                        Promise::new(self.owner.clone()).transfer(to_developer);
 
-                        self.balance -= u128::from(habit.deposit);
-                        habit.deposit = U128(0);
-                        let _evicted = existing_habits.replace(index, habit);
-                        return account.to_string();
-                    }
+        match &mut existing_habits.get(index) {
+            Some(habit) => {
+                let orig_deposit = u128::from(habit.deposit);
+                let orig_deadline = u64::from(habit.deadline);
+
+                // Return all deposit to the requesting user if conditions met
+                if account == user && habit.approved &&
+                    orig_deadline + self.approval_grace_period < current_time
+                {
+                    Promise::new(account.clone()).transfer(orig_deposit);
+                    self.balance -= orig_deposit;
+                    habit.deposit = U128(0);
+                    let _updated = existing_habits.replace(index, habit);
+                    return user.to_string();
                 }
-                None => (),
-            };
-        } else {
-            panic!("Index {} is out of range", index);
-        }
+                // Split deposit between developer and beneficiary if conditions met, call by beneficiary
+                if account == habit.beneficiary && !habit.approved &&
+                    orig_deadline + self.approval_grace_period < current_time
+                {
+                    let to_beneficiary = orig_deposit / (100 - self.dev_fee as u128);
+                    let to_developer = orig_deposit - to_beneficiary;
+                    Promise::new(account.clone()).transfer(to_beneficiary);
+                    Promise::new(self.owner.clone()).transfer(to_developer);
+
+                    self.balance -= orig_deposit;
+                    habit.deposit = U128(0);
+                    let _updated = existing_habits.replace(index, habit);
+                    return account.to_string();
+                }
+            }
+            None => panic!("Index {} is out of range", index),
+        };
 
         "".to_string()
     }
@@ -321,26 +318,6 @@ impl StickyHabitsContract {
         U64(self.balance as u64)
     }
 
-    // Returns user habit at index to be updated internally
-    fn get_user_habit_at_index(
-        &mut self,
-        user: AccountId,
-        index: u64,
-    ) -> Habit {
-        let existing_habits = match self.habits.get(&user) {
-            Some(v) => v,
-            None => {
-                panic!("User {} has no habit yet", user);
-            },
-        };
-        let habit = match existing_habits.get(index) {
-            Some(h) => h,
-            None => {
-                panic!("Index {} is out of range", index);
-            }
-        };
-        habit
-    }
 }
 
 #[cfg(test)]
