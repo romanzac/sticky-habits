@@ -142,10 +142,11 @@ impl StickyHabitsContract {
     #[payable]
     pub fn update_evidence(
         &mut self,
+        user: AccountId,
         at_index: U64,
         evidence: String,
     ) {
-        self.update_habit(at_index,"update_evidence", evidence);
+        self.update_habit(at_index,"update_evidence", user, evidence);
     }
 
     // Beneficiary approves habit by setting "approved" flag to true
@@ -155,31 +156,7 @@ impl StickyHabitsContract {
         user: AccountId,
         at_index: U64,
     ) {
-        let index = u64::from(at_index);
-        let beneficiary: AccountId = env::predecessor_account_id();
-        let current_time = env::block_timestamp();
-
-        let mut existing_habits = match self.habits.get(&user) {
-            Some(v) => v,
-            None => {
-                panic!("User {} has no habit yet", user);
-            },
-        };
-
-        match &mut existing_habits.get(index) {
-            Some(habit) => {
-                let orig_deadline = u64::from(habit.deadline);
-
-                if habit.beneficiary == beneficiary &&
-                    orig_deadline < current_time &&
-                    orig_deadline + self.approval_grace_period > current_time
-                {
-                    habit.approved = true;
-                    let _updated = existing_habits.replace(index, habit);
-                }
-            }
-            None => panic!("Index {} is out of range", index),
-        };
+        self.update_habit(at_index,"approve", user, "".into());
     }
 
     #[payable]
@@ -297,12 +274,14 @@ impl StickyHabitsContract {
         &mut self,
         at_index: U64,
         action: &str,
+        user: AccountId,
         evidence: String,
     ) {
         let index = u64::from(at_index);
-        let user: AccountId = env::predecessor_account_id();
+        let account: AccountId = env::predecessor_account_id();
+        let current_time = env::block_timestamp();
 
-        log!("Updating habit evidence for user {}", user);
+        log!("Updating habit with action {} for user {}", action, user);
 
         let mut existing_habits = match self.habits.get(&user) {
             Some(v) => v,
@@ -314,8 +293,14 @@ impl StickyHabitsContract {
         match &mut existing_habits.get(index) {
             Some(habit) => {
                 match action {
-                    "update_evidence" =>
-                        Self::update_evidence_action(index, &mut existing_habits, habit, evidence),
+                    "update_evidence" => {
+                        assert_eq!(user, account, "User can update evidence only for her own habit");
+                        self.update_evidence_action(index, &mut existing_habits, habit, evidence);
+                    },
+                    "approve" => {
+                        assert_eq!(habit.beneficiary, account, "Only beneficiary can approve habit for user");
+                        self.approve_action(index, &mut existing_habits, habit, current_time);
+                    },
                     _ => {}
                 };
             },
@@ -325,6 +310,7 @@ impl StickyHabitsContract {
     }
 
     fn update_evidence_action(
+        &self,
         index: u64,
         existing_habits: &mut Vector<Habit>,
         habit: &mut Habit,
@@ -332,6 +318,23 @@ impl StickyHabitsContract {
     ) {
         habit.evidence = evidence;
         let _updated = existing_habits.replace(index, habit);
+    }
+
+    fn approve_action(
+        &self,
+        index: u64,
+        existing_habits: &mut Vector<Habit>,
+        habit: &mut Habit,
+        current_time: u64
+    ) {
+        let orig_deadline = u64::from(habit.deadline);
+
+        if  orig_deadline < current_time &&
+            orig_deadline + self.approval_grace_period > current_time
+        {
+            habit.approved = true;
+            let _updated = existing_habits.replace(index, habit);
+        }
     }
 
 }
@@ -420,7 +423,8 @@ mod tests {
             AccountId::from_str("maria").unwrap(),
         );
 
-        contract.update_evidence(U64(1), "https://www.icloud.com/myfile.mov".to_string());
+        contract.update_evidence(AccountId::from_str("roman").unwrap(), U64(1),
+                                 "https://www.icloud.com/myfile.mov".to_string());
 
         let updated_habit = &contract.get_habits_user(AccountId::from_str("roman").unwrap(),
                                                       None, Some(U64(2)))[1];

@@ -17,7 +17,7 @@ async fn create_sticky_habits(
         .await?;
 
     sh.call("init")
-        .args_json(serde_json::json!({
+        .args_json(json!({
             "owner": owner.id(),
             "dev_fee": U64(5),
             "habit_acquisition_period": U64(10*1000000000), // 10 sec
@@ -55,6 +55,7 @@ async fn test_default_workflow(
     let ue_res = user
         .call(contract.id(), "update_evidence")
         .args_json(json!({
+            "user": user.id(),
             "at_index": U64(0),
             "evidence": "https://www.googlecloud.com/myfile.mov".to_string(),
             }))
