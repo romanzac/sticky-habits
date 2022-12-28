@@ -154,7 +154,7 @@ impl StickyHabitsContract {
         &mut self,
         user: AccountId,
         at_index: U64,
-    ) -> bool {
+    ) {
         let index = u64::from(at_index);
         let beneficiary: AccountId = env::predecessor_account_id();
         let current_time = env::block_timestamp();
@@ -176,13 +176,10 @@ impl StickyHabitsContract {
                 {
                     habit.approved = true;
                     let _updated = existing_habits.replace(index, habit);
-                    return true;
                 }
             }
             None => panic!("Index {} is out of range", index),
         };
-
-        false
     }
 
     #[payable]
@@ -190,7 +187,7 @@ impl StickyHabitsContract {
         &mut self,
         user: AccountId,
         at_index: U64,
-    ) -> String {
+    ) {
         let index = u64::from(at_index);
         let account: AccountId = env::predecessor_account_id();
         let current_time = env::block_timestamp();
@@ -215,7 +212,6 @@ impl StickyHabitsContract {
                     self.balance -= orig_deposit;
                     habit.deposit = U128(0);
                     let _updated = existing_habits.replace(index, habit);
-                    return user.to_string();
                 }
                 // Split deposit between developer and beneficiary if conditions met, call by beneficiary
                 if account == habit.beneficiary && !habit.approved &&
@@ -229,13 +225,10 @@ impl StickyHabitsContract {
                     self.balance -= orig_deposit;
                     habit.deposit = U128(0);
                     let _updated = existing_habits.replace(index, habit);
-                    return account.to_string();
                 }
             }
             None => panic!("Index {} is out of range", index),
         };
-
-        "".to_string()
     }
 
     // Returns an array of habits for the user with from and limit parameters.
@@ -485,24 +478,20 @@ mod tests {
 
         // Failed unlock from user side - on habit not approved
         set_context("roman", 0, 1663132260000000000);
-        let receiver = contract.unlock_deposit(AccountId::from_str("roman").unwrap(),
+        contract.unlock_deposit(AccountId::from_str("roman").unwrap(),
                                                U64(0));
-        assert_eq!(receiver, "".to_string());
-
 
         // Failed unlock from beneficiary side - on too early
         set_context("josef", 0, 1663132260000000000);
-        let receiver = contract.unlock_deposit(AccountId::from_str("roman").unwrap(),
+        contract.unlock_deposit(AccountId::from_str("roman").unwrap(),
                                                U64(0));
-        assert_eq!(receiver, "".to_string());
 
         // Success unlock from user side
         set_context("josef", 0, 1664302901000000000);
         contract.approve_habit(AccountId::from_str("roman").unwrap(), U64(0));
         set_context("roman", 0, 1665771701000000000);
-        let receiver = contract.unlock_deposit(AccountId::from_str("roman").unwrap(),
+        contract.unlock_deposit(AccountId::from_str("roman").unwrap(),
                                                U64(0));
-        assert_eq!(receiver, "roman".to_string());
 
         // Success unlock from beneficiary side
         set_context("roman", 20 * NEAR, 1662312790000000000);
@@ -512,9 +501,8 @@ mod tests {
             AccountId::from_str("josef").unwrap(),
         );
         set_context("josef", 0, 1665771701000000000);
-        let receiver = contract.unlock_deposit(AccountId::from_str("roman").unwrap(),
+        contract.unlock_deposit(AccountId::from_str("roman").unwrap(),
                                                U64(1));
-        assert_eq!(receiver, "josef".to_string());
     }
 }
 
