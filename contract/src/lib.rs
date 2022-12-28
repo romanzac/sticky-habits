@@ -145,25 +145,7 @@ impl StickyHabitsContract {
         at_index: U64,
         evidence: String,
     ) {
-        let index = u64::from(at_index);
-        let user: AccountId = env::predecessor_account_id();
-
-        log!("Updating habit evidence for user {}", user);
-
-        let mut existing_habits = match self.habits.get(&user) {
-            Some(v) => v,
-            None => {
-                panic!("User {} has no habit yet", user);
-            },
-        };
-
-        match &mut existing_habits.get(index) {
-            Some(habit) => {
-                habit.evidence = evidence;
-                let _updated = existing_habits.replace(index, habit);
-            }
-            None => panic!("Index {} is out of range", index),
-        };
+        self.update_habit(at_index,"update_evidence", evidence);
     }
 
     // Beneficiary approves habit by setting "approved" flag to true
@@ -316,6 +298,47 @@ impl StickyHabitsContract {
     pub fn get_balance(&self) -> U64 {
         assert!(env::state_exists(), "Not initialized yet");
         U64(self.balance as u64)
+    }
+
+    fn update_habit(
+        &mut self,
+        at_index: U64,
+        action: &str,
+        evidence: String,
+    ) {
+        let index = u64::from(at_index);
+        let user: AccountId = env::predecessor_account_id();
+
+        log!("Updating habit evidence for user {}", user);
+
+        let mut existing_habits = match self.habits.get(&user) {
+            Some(v) => v,
+            None => {
+                panic!("User {} has no habit yet", user);
+            },
+        };
+
+        match &mut existing_habits.get(index) {
+            Some(habit) => {
+                match action {
+                    "update_evidence" =>
+                        Self::update_evidence_action(index, &mut existing_habits, habit, evidence),
+                    _ => {}
+                };
+            },
+
+            None => panic!("Index {} is out of range", index),
+        }
+    }
+
+    fn update_evidence_action(
+        index: u64,
+        existing_habits: &mut Vector<Habit>,
+        habit: &mut Habit,
+        evidence: String,
+    ) {
+        habit.evidence = evidence;
+        let _updated = existing_habits.replace(index, habit);
     }
 
 }
