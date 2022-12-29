@@ -24,9 +24,12 @@ pub struct Habit {
 pub struct StickyHabitsContract {
     owner: AccountId,
     balance: Balance,
-    dev_fee: u64,                  // percent
-    habit_acquisition_period: u64, // Nanoseconds
-    approval_grace_period: u64,    // Nanoseconds
+    dev_fee: u64,
+    // percent
+    habit_acquisition_period: u64,
+    // Nanoseconds
+    approval_grace_period: u64,
+    // Nanoseconds
     habits: UnorderedMap<AccountId, Vector<Habit>>,
     beneficiaries: UnorderedMap<AccountId, Vector<AccountId>>,
 }
@@ -165,49 +168,7 @@ impl StickyHabitsContract {
 
     #[payable]
     pub fn unlock_deposit(&mut self, user: AccountId, at_index: U64) {
-        let index = u64::from(at_index);
-        let account: AccountId = env::predecessor_account_id();
-        let current_time = env::block_timestamp();
-
-        let mut existing_habits = match self.habits.get(&user) {
-            Some(v) => v,
-            None => {
-                panic!("User {} has no habit yet", user);
-            }
-        };
-
-        match &mut existing_habits.get(index) {
-            Some(habit) => {
-                let orig_deposit = u128::from(habit.deposit);
-                let orig_deadline = u64::from(habit.deadline);
-
-                // Return all deposit to the requesting user if conditions met
-                if account == user
-                    && habit.approved
-                    && orig_deadline + self.approval_grace_period < current_time
-                {
-                    Promise::new(account.clone()).transfer(orig_deposit);
-                    self.balance -= orig_deposit;
-                    habit.deposit = U128(0);
-                    let _updated = existing_habits.replace(index, habit);
-                }
-                // Split deposit between developer and beneficiary if conditions met, call by beneficiary
-                if account == habit.beneficiary
-                    && !habit.approved
-                    && orig_deadline + self.approval_grace_period < current_time
-                {
-                    let to_beneficiary = orig_deposit / (100 - self.dev_fee as u128);
-                    let to_developer = orig_deposit - to_beneficiary;
-                    Promise::new(account.clone()).transfer(to_beneficiary);
-                    Promise::new(self.owner.clone()).transfer(to_developer);
-
-                    self.balance -= orig_deposit;
-                    habit.deposit = U128(0);
-                    let _updated = existing_habits.replace(index, habit);
-                }
-            }
-            None => panic!("Index {} is out of range", index),
-        };
+        self.update_habit(at_index, "unlock_deposit", user, "".into());
     }
 
     // Returns an array of habits for the user with from and limit parameters.
@@ -305,6 +266,19 @@ impl StickyHabitsContract {
                         );
                         self.approve_action(index, &mut existing_habits, habit, current_time);
                     }
+                    "unlock_deposit" => {
+                        assert!(
+                            account == habit.beneficiary || account == user,
+                            "Only user or beneficiary associated to the habit can unlock deposit"
+                        );
+                        self.unlock_deposit_action(
+                            index,
+                            user,
+                            &mut existing_habits,
+                            habit,
+                            current_time,
+                        );
+                    }
                     _ => {}
                 };
             }
@@ -336,6 +310,37 @@ impl StickyHabitsContract {
         if orig_deadline < current_time && orig_deadline + self.approval_grace_period > current_time
         {
             habit.approved = true;
+            let _updated = existing_habits.replace(index, habit);
+        }
+    }
+
+    fn unlock_deposit_action(
+        &mut self,
+        index: u64,
+        user: AccountId,
+        existing_habits: &mut Vector<Habit>,
+        habit: &mut Habit,
+        current_time: u64,
+    ) {
+        let orig_deposit = u128::from(habit.deposit);
+        let orig_deadline = u64::from(habit.deadline);
+
+        if orig_deadline + self.approval_grace_period < current_time {
+            match habit.approved {
+                // Return all deposit to the requesting user if conditions met
+                true => {
+                    Promise::new(user).transfer(orig_deposit);
+                }
+                // Split deposit between developer and beneficiary if conditions met, call by beneficiary
+                false => {
+                    let to_beneficiary = orig_deposit / (100 - self.dev_fee as u128);
+                    let to_developer = orig_deposit - to_beneficiary;
+                    Promise::new(habit.beneficiary.clone()).transfer(to_beneficiary);
+                    Promise::new(self.owner.clone()).transfer(to_developer);
+                }
+            }
+            self.balance -= orig_deposit;
+            habit.deposit = U128(0);
             let _updated = existing_habits.replace(index, habit);
         }
     }
