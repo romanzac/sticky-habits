@@ -325,7 +325,7 @@ impl StickyHabitsContract {
         let orig_deposit = u128::from(habit.deposit);
         let orig_deadline = u64::from(habit.deadline);
 
-        if orig_deadline + self.approval_grace_period < current_time {
+        if orig_deadline + self.approval_grace_period < current_time && habit.deposit > U128(0) {
             match habit.approved {
                 // Return all deposit to the requesting user if conditions met
                 true => {
