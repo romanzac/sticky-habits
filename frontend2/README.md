@@ -1,32 +1,47 @@
-# Replicache Vercel Template
+# TypeScript Next.js example
 
-Replicache is a framework for creating multiplayer web applications.
+This is a really simple project that shows the usage of Next.js with TypeScript.
 
-Replicache enables:
+## Deploy your own
 
-* **Realtime collaboration:** Users see each others' changes as they happen, without any reloads.
-* **Instant UI:** The UI responds to changes instantly, without waiting for server round trips. Everything is optimistic, automatically.
-* **Offline resilience:** Applications can go offline for minutes or hours and sync up smoothly when they come back online.
+Deploy the example using [Vercel](https://vercel.com?utm_source=github&utm_medium=readme&utm_campaign=next-example) or preview live with [StackBlitz](https://stackblitz.com/github/vercel/next.js/tree/canary/examples/with-typescript)
 
-To learn more about Replicache, see [replicache.dev](https://replicache.dev/).
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/git/external?repository-url=https://github.com/vercel/next.js/tree/canary/examples/with-typescript&project-name=with-typescript&repository-name=with-typescript)
 
-This template creates a full Replicache-powered todo list powered by Vercel, Next.js, and [Supabase](https://supabase.com/). You can use this as the basis for your own Replicache powered app.
+## How to use it?
 
-## Install
+Execute [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app) with [npm](https://docs.npmjs.com/cli/init), [Yarn](https://yarnpkg.com/lang/en/docs/cli/create/), or [pnpm](https://pnpm.io) to bootstrap the example:
 
-### Step 1: Create Supabase Project
+```bash
+npx create-next-app --example with-typescript with-typescript-app
+```
 
-- Create a new project at [Supabase](https://supabase.com/).
-- ***Important: Don't forget to copy the password you choose to some scratch file.*** You'll need that later and can't retrieve it after this screen.
+```bash
+yarn create next-app --example with-typescript with-typescript-app
+```
 
-### Step 2: Deploy this Template
+```bash
+pnpm create next-app --example with-typescript with-typescript-app
+```
 
-- When you get to the Replicache integration you'll have to provide the database password you saved in step 1.
+Deploy it to the cloud with [Vercel](https://vercel.com/new?utm_source=github&utm_medium=readme&utm_campaign=next-example) ([Documentation](https://nextjs.org/docs/deployment)).
 
-## Documentation
+## Notes
 
-You can find the complete Replicache documentation at https://doc.replicache.dev/.
+This example shows how to integrate the TypeScript type system into Next.js. Since TypeScript is supported out of the box with Next.js, all we have to do is to install TypeScript.
 
-## Get Help
+```
+npm install --save-dev typescript
+```
 
-Come say hi on [Discord](https://discord.replicache.dev/)! We're happy to help you get setup and answer questions.
+To enable TypeScript's features, we install the type declarations for React and Node.
+
+```
+npm install --save-dev @types/react @types/react-dom @types/node
+```
+
+When we run `next dev` the next time, Next.js will start looking for any `.ts` or `.tsx` files in our project and builds it. It even automatically creates a `tsconfig.json` file for our project with the recommended settings.
+
+Next.js has built-in TypeScript declarations, so we'll get autocompletion for Next.js' modules straight away.
+
+A `type-check` script is also added to `package.json`, which runs TypeScript's `tsc` CLI in `noEmit` mode to run type-checking separately. You can then include this, for example, in your `test` scripts.
