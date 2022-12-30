@@ -52,7 +52,7 @@ async function doUserAction(event) {
 async function fetchHabits() {
   const userHabits = await stickyHabits.getUserHabits();
   const beneficiaryHabits = await stickyHabits.getBeneficiaryHabits();
-  console.log(userHabits);
+  //console.log(userHabits);
   console.log(beneficiaryHabits);
 
   document.getElementById('user-habits-table').innerHTML = ''
@@ -75,12 +75,12 @@ async function fetchHabits() {
   });
 
   document.getElementById('beneficiary-habits-table').innerHTML = ''
-
-  beneficiaryHabits.forEach(elem => {
-    const depositinNear = utils.format.formatNearAmount(elem.deposit)
-    const date = new Date(elem.deadline / 1000000);
-    let tr = document.createElement('tr')
-    tr.innerHTML = `
+  for (const user in beneficiaryHabits) {
+    beneficiaryHabits[user].forEach(elem => {
+      const depositinNear = utils.format.formatNearAmount(elem.deposit)
+      const date = new Date(elem.deadline / 1000000);
+      let tr = document.createElement('tr')
+      tr.innerHTML = `
       <tr>
         <th scope="row">${elem.description}</th>
         <td>${date}</td>
@@ -90,10 +90,9 @@ async function fetchHabits() {
         <td>${elem.approved}</td>
       </tr>
     `
-    document.getElementById('beneficiary-habits-table').appendChild(tr)
-  });
-
-
+      document.getElementById('beneficiary-habits-table').appendChild(tr)
+    });
+  }
 }
 
 // Display the signed-out-flow container
