@@ -1,2 +1,14 @@
 # Sticky Habits
-While building new habits it might be handy to have someone who can hold us accountable. Why not to store our resolutions in a smart contract and let our friends receive money each time we don't keep the promise ?
+## Smart Contract
+
+Prerequisites:   
+- Rust v1.65.0+
+- NodeJS 18.12.1
+- NEAR Protocol testnet account
+
+To test the habit workflow:
+1. cd sticky-habits
+2. npm run test
+
+## Frontend
+WIP
