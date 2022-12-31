@@ -1,5 +1,5 @@
-import Link from 'next/link'
-import Layout from '../components/Layout'
+// import Link from 'next/link'
+// import Layout from '../components/Layout'
 
 // const IndexPage = () => (
 //   <Layout title="Home | Next.js + TypeScript Example">
@@ -14,7 +14,8 @@ import Layout from '../components/Layout'
 
 import React, { useState } from 'react';
 import { NextPage } from 'next';
-import { Habit } from '../src/types'
+import { Habit } from '../src/types';
+
 
 // // Todo interface representing a todo item
 // interface Todo {
@@ -23,7 +24,7 @@ import { Habit } from '../src/types'
 //   completed: boolean;
 // }
 
-const IndexPage: NextPage = () => {
+const Home: NextPage = () => {
   // Initialize the list of todos in state
   const [habits, setHabits] = useState<Habit[]>([
     { description: 'Go to gym everyday', deadline: '1', deposit: 1, beneficiary: 'pepa.testnet',
@@ -79,7 +80,10 @@ const IndexPage: NextPage = () => {
           const deposit = event.currentTarget.elements[2] as HTMLInputElement;
           const beneficiary = event.currentTarget.elements[3] as HTMLInputElement;
           handleAddHabit(description.value, deadline.value, parseInt(deposit.value), beneficiary.value);
-         // description.value = '';
+          description.value = '';
+          deadline.value = '';
+          deposit.value = '';
+          beneficiary.value = '';
         }}
       >
         <input type="text" name="description" />
@@ -88,24 +92,35 @@ const IndexPage: NextPage = () => {
         <input type="text" name="beneficiary" />
         <button type="submit">Add Habit</button>
       </form>
-      <ul>
+      <table className='table table-striped'>
+        <thead>
+        <tr>
+          <th scope="col">Description</th>
+          <th scope="col">Deadline</th>
+          <th scope="col">Deposit</th>
+          <th scope="col">Beneficiary</th>
+          <th scope="col">Evidence</th>
+          <th scope="col">Approved</th>
+        </tr>
+        </thead>
         {habits.map((habit) => (
-          <li key={habit.description}>
+          <tr key={habit.description}>
+            {habit.description}
+            {habit.deadline}
+            {habit.deposit}
+            {habit.beneficiary}
+            {habit.evidence}
+            {habit.approved}
             <input
               type="checkbox"
               checked={habit.approved}
               onChange={() => handleToggleCompleted(habit.description)}
             />
-            {habit.description}
-            <button onClick={() => handleDeleteTodo(habit.description)}>
-              Delete
-            </button>
-          </li>
+          </tr>
         ))}
-      </ul>
-      <button onClick={handleClearCompleted}>Clear completed</button>
+      </table>
     </div>
   );
 };
 
-export default IndexPage
+export default Home
