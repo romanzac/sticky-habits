@@ -12,7 +12,7 @@
 //
 // export default IndexPage
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { NextPage } from 'next';
 import { Habit } from '../src/types';
 
@@ -68,6 +68,15 @@ const Home: NextPage = () => {
     const updatedHabits = habits.filter((habit) => !habit.approved);
     setHabits(updatedHabits);
   };
+
+  const [hasMounted, setHasMounted] = React.useState(false);
+  React.useEffect(() => {
+      setHasMounted(true);
+      }, []);
+  if (!hasMounted) {
+      return null;
+  }
+
 
   return (
     <div>
