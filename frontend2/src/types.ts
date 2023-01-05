@@ -8,8 +8,9 @@ export type User = {
   id: number
   name: string
 }
-
+// TODO: extend Habit datatype with an ID for each habit
 export type Habit = {
+  id: number,
   description: string,
   deadline: string,
   deposit: number,
