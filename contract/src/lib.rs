@@ -25,6 +25,7 @@ pub struct StickyHabitsContract {
     owner: AccountId,
     balance: Balance,
     dev_fee: u64,
+    id_counter: u64,
     // percent
     habit_acquisition_period: u64,
     // Nanoseconds
@@ -41,6 +42,7 @@ impl Default for StickyHabitsContract {
             owner: env::current_account_id(),
             balance: Balance::from(U128(0)),
             dev_fee: 5,
+            id_counter: 0,
             habit_acquisition_period: 21 * 24 * 3600 * 1000000000 as u64,
             approval_grace_period: 15 * 24 * 3600 * 1000000000 as u64,
             habits: UnorderedMap::new(b"map-id-1".to_vec()),
@@ -64,6 +66,7 @@ impl StickyHabitsContract {
             owner,
             balance: Balance::from(U128(0)),
             dev_fee: u64::from(dev_fee),
+            id_counter: 0,
             habit_acquisition_period: u64::from(habit_acquisition_period),
             approval_grace_period: u64::from(approval_grace_period),
             habits: UnorderedMap::new(b"map-id-1".to_vec()),
