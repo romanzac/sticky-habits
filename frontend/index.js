@@ -52,7 +52,7 @@ async function doUserAction(event) {
 async function fetchHabits() {
   const userHabits = await stickyHabits.getUserHabits();
   const beneficiaryHabits = await stickyHabits.getBeneficiaryHabits();
-  //console.log(userHabits);
+  console.log(userHabits);
   console.log(beneficiaryHabits);
 
   document.getElementById('user-habits-table').innerHTML = ''
@@ -63,7 +63,8 @@ async function fetchHabits() {
     let tr = document.createElement('tr')
     tr.innerHTML = `
       <tr>
-        <th scope="row">${elem.description}</th>
+        <th scope="row">${elem.id}</th>
+        <td>${elem.description}</td>
         <td>${date}</td>
         <td>${depositinNear}</td>
         <td>${elem.beneficiary}</td>
@@ -82,7 +83,8 @@ async function fetchHabits() {
       let tr = document.createElement('tr')
       tr.innerHTML = `
       <tr>
-        <th scope="row">${elem.description}</th>
+        <th scope="row">${elem.id}</th>
+        <td>${elem.description}</td>
         <td>${date}</td>
         <td>${depositinNear}</td>
         <td>${elem.beneficiary}</td>
