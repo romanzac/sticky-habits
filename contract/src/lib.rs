@@ -4,6 +4,7 @@ use near_sdk::json_types::{U128, U64};
 use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::{env, log, near_bindgen, AccountId, Balance, Promise};
 use std::collections::HashMap;
+use sha256::digest;
 
 pub const STORAGE_COST: u128 = 1_000_000_000_000_000_000_000;
 
@@ -11,6 +12,7 @@ pub const STORAGE_COST: u128 = 1_000_000_000_000_000_000_000;
 #[derive(Serialize, Deserialize, Debug, BorshDeserialize, BorshSerialize)]
 #[serde(crate = "near_sdk::serde")]
 pub struct Habit {
+    id: String,
     description: String,
     deadline: U64,
     deposit: U128,
@@ -117,7 +119,16 @@ impl StickyHabitsContract {
             deposit
         };
 
+        // Get random seed from validator and append actual id_counter value
+        let r_seed = &mut env::random_seed();
+        let id_counter_b = &mut self.id_counter.to_le_bytes().to_vec();
+        let raw_id = r_seed.append(id_counter_b).try_to_vec().unwrap();
+
+        // create a Sha256 object
+        let id = digest(raw_id.as_slice());
+
         existing_habits.push(&Habit {
+            id,
             description: description.clone(),
             deadline: U64(deadline),
             deposit: U128(to_lock),
@@ -128,6 +139,9 @@ impl StickyHabitsContract {
 
         self.habits.insert(&user, &existing_habits);
         self.balance += Balance::from(to_lock);
+
+        // Increment counter
+        self.id_counter += 1;
 
         log!(
             "Deposit of {} has been made for habit {}",

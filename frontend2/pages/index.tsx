@@ -12,6 +12,7 @@
 //
 // export default IndexPage
 
+
 import React, { useEffect, useState } from 'react';
 import { NextPage } from 'next';
 import { Habit } from '../src/types';
@@ -27,15 +28,16 @@ import { Habit } from '../src/types';
 const Home: NextPage = () => {
   // Initialize the list of todos in state
   const [habits, setHabits] = useState<Habit[]>([
-    { description: 'Go to gym everyday', deadline: '1', deposit: 1, beneficiary: 'pepa.testnet',
+    { id:"48482374823", description: 'Go to gym everyday', deadline: '1', deposit: 1, beneficiary: 'pepa.testnet',
     evidence: '', approved: false},
-    { description: 'Cook for grandmother once a week', deadline: '1', deposit: 1, beneficiary: 'pepa.testnet',
+    { id:"48482374823", description: 'Cook for grandmother once a week', deadline: '1', deposit: 1, beneficiary: 'pepa.testnet',
       evidence: '', approved: false}
   ]);
 
-  // Function to add a new todo
+  // Function to add a new habit
   const handleAddHabit = (description: string, deadline: string, deposit: number, beneficiary: string) => {
     const newHabit: Habit = {
+      id: "123456",
       description,
       deadline,
       deposit,
