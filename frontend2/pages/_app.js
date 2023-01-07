@@ -1,5 +1,12 @@
-import styles from '../styles/global.css';
+import { HabitProvider } from "../context/HabitList";
+import "../styles/globals.css";
 
-export default function MyApp({ Component, pageProps }) {
-  return <Component {...pageProps} />
-}
+const MyApp = ({ Component, pageProps }) => (
+  <HabitProvider>
+    <div>
+      <Component {...pageProps} />
+    </div>
+  </HabitProvider>
+);
+
+export default MyApp;
