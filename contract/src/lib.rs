@@ -3,8 +3,8 @@ use near_sdk::collections::{UnorderedMap, Vector};
 use near_sdk::json_types::{U128, U64};
 use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::{env, log, near_bindgen, AccountId, Balance, Promise};
-use std::collections::HashMap;
 use sha256::digest;
+use std::collections::HashMap;
 
 pub const STORAGE_COST: u128 = 1_000_000_000_000_000_000_000;
 
@@ -125,7 +125,8 @@ impl StickyHabitsContract {
         let raw_id = {
             r_seed.append(id_counter_b);
             ().try_to_vec()
-        }.unwrap();
+        }
+        .unwrap();
 
         // create a Sha256 object
         let id = digest(raw_id.as_slice());
@@ -177,18 +178,19 @@ impl StickyHabitsContract {
     // Adds a single link to the video or image content or cloud storage folder
     #[payable]
     pub fn update_evidence(&mut self, user: AccountId, at_index: u16, evidence: String) {
-        self.update_habit(at_index, "update_evidence", user, evidence);
+        assert!(!evidence.is_empty(), "Evidence cannot be empty");
+        self.update_habit(at_index, "update_evidence", user, Some(evidence));
     }
 
     // Beneficiary approves habit by setting "approved" flag to true
     #[payable]
     pub fn approve_habit(&mut self, user: AccountId, at_index: u16) {
-        self.update_habit(at_index, "approve", user, "".into());
+        self.update_habit(at_index, "approve", user, None);
     }
 
     #[payable]
     pub fn unlock_deposit(&mut self, user: AccountId, at_index: u16) {
-        self.update_habit(at_index, "unlock_deposit", user, "".into());
+        self.update_habit(at_index, "unlock_deposit", user, None);
     }
 
     // Returns an array of habits for the user with from and limit parameters.
@@ -206,11 +208,7 @@ impl StickyHabitsContract {
             None => Vector::new(b"vector-id-1".to_vec()),
         };
 
-        existing_habits
-            .iter()
-            .skip(from)
-            .take(limit)
-            .collect()
+        existing_habits.iter().skip(from).take(limit).collect()
     }
 
     // Returns a map of habits of beneficiary's friends with from and limit parameters.
@@ -255,7 +253,13 @@ impl StickyHabitsContract {
         U64(self.balance as u64)
     }
 
-    fn update_habit(&mut self, at_index: u16, action: &str, user: AccountId, evidence: String) {
+    fn update_habit(
+        &mut self,
+        at_index: u16,
+        action: &str,
+        user: AccountId,
+        evidence: Option<String>,
+    ) {
         let index = u64::from(at_index);
         let account: AccountId = env::predecessor_account_id();
         let current_time = env::block_timestamp();
@@ -277,7 +281,9 @@ impl StickyHabitsContract {
                             user, account,
                             "User can update evidence only for her own habit"
                         );
-                        self.update_evidence_action(index, &mut existing_habits, habit, evidence);
+                        if let Some(e) = evidence {
+                            self.update_evidence_action(index, &mut existing_habits, habit, e);
+                        }
                     }
                     "approve" => {
                         assert_eq!(
@@ -498,11 +504,8 @@ mod tests {
             &contract.get_habits_user(AccountId::from_str("roman").unwrap(), None, Some(3));
         assert_eq!(habits.len(), 3);
 
-        let last_habit = &contract.get_habits_user(
-            AccountId::from_str("roman").unwrap(),
-            Some(1),
-            Some(2),
-        )[1];
+        let last_habit =
+            &contract.get_habits_user(AccountId::from_str("roman").unwrap(), Some(1), Some(2))[1];
         assert_eq!(
             u64::from(last_habit.deadline),
             1664172263000000000 + contract.habit_acquisition_period + 60000000000
