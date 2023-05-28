@@ -56,7 +56,7 @@ async fn test_default_workflow(
         .call(contract.id(), "update_evidence")
         .args_json(json!({
             "user": user.id(),
-            "at_index": U64(0),
+            "at_index": 0,
             "evidence": "https://www.googlecloud.com/myfile.mov".to_string(),
             }))
         .transact()
@@ -73,7 +73,7 @@ async fn test_default_workflow(
         .call(contract.id(), "approve_habit")
         .args_json(json!({
             "user": user.id(),
-            "at_index": U64(0),
+            "at_index": 0,
             }))
         .transact()
         .await?
@@ -89,7 +89,7 @@ async fn test_default_workflow(
         .call(contract.id(), "unlock_deposit")
         .args_json(json!({
             "user": user.id(),
-            "at_index": U64(0),
+            "at_index": 0,
             }))
         .transact()
         .await?
