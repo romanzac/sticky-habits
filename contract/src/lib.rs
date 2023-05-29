@@ -178,93 +178,16 @@ impl StickyHabitsContract {
     // Adds a single link to the video or image content or cloud storage folder
     #[payable]
     pub fn update_evidence(&mut self, user: AccountId, at_index: u16, evidence: String) {
-        assert!(!evidence.is_empty(), "Evidence cannot be empty");
-        self.update_habit(at_index, "update_evidence", user, Some(evidence));
-    }
-
-    // Beneficiary approves habit by setting "approved" flag to true
-    #[payable]
-    pub fn approve_habit(&mut self, user: AccountId, at_index: u16) {
-        self.update_habit(at_index, "approve", user, None);
-    }
-
-    #[payable]
-    pub fn unlock_deposit(&mut self, user: AccountId, at_index: u16) {
-        self.update_habit(at_index, "unlock_deposit", user, None);
-    }
-
-    // Returns an array of habits for the user with from and limit parameters.
-    pub fn get_habits_user(
-        &self,
-        user: AccountId,
-        from_index: Option<u16>,
-        limit_to: Option<u16>,
-    ) -> Vec<Habit> {
-        let from = usize::from(from_index.unwrap_or(0u16));
-        let limit = usize::from(limit_to.unwrap_or(1u16));
-
-        let existing_habits = match self.habits.get(&user) {
-            Some(v) => v,
-            None => Vector::new(b"vector-id-1".to_vec()),
-        };
-
-        existing_habits.iter().skip(from).take(limit).collect()
-    }
-
-    // Returns a map of habits of beneficiary's friends with from and limit parameters.
-    pub fn get_habits_beneficiary(
-        &self,
-        beneficiary: AccountId,
-        from_index: Option<u16>,
-        limit_to: Option<u16>,
-    ) -> HashMap<AccountId, Vec<Habit>> {
-        let from = usize::from(from_index.unwrap_or(0u16));
-        let limit = usize::from(limit_to.unwrap_or(1u16));
-
-        let mut friends_habits: HashMap<AccountId, Vec<Habit>> = HashMap::new();
-
-        // Get users associated with beneficiary
-        let beneficiary_users = match self.beneficiaries.get(&beneficiary) {
-            Some(v) => v,
-            None => Vector::new(b"vector-id-2".to_vec()),
-        };
-
-        // Get habits from all associated users and filter them to those belonging to beneficiary
-        for user in beneficiary_users.iter() {
-            let user_habits = match self.habits.get(&user) {
-                Some(v) => v,
-                None => Vector::new(b"vector-id-1".to_vec()),
-            };
-            let user_habits_filtered: Vec<Habit> = user_habits
-                .iter()
-                .skip(from)
-                .take(limit)
-                .filter(|b| b.beneficiary == beneficiary)
-                .collect();
-            friends_habits.insert(user, user_habits_filtered);
-        }
-
-        friends_habits
-    }
-
-    // Returns actual contract balance
-    pub fn get_balance(&self) -> U64 {
-        assert!(env::state_exists(), "Not initialized yet");
-        U64(self.balance as u64)
-    }
-
-    fn update_habit(
-        &mut self,
-        at_index: u16,
-        action: &str,
-        user: AccountId,
-        evidence: Option<String>,
-    ) {
         let index = u64::from(at_index);
         let account: AccountId = env::predecessor_account_id();
-        let current_time = env::block_timestamp();
 
-        log!("Updating habit with action {} for user {}", action, user);
+        log!("Updating habit evidence for user {}", user);
+
+        assert!(!evidence.is_empty(), "Evidence cannot be empty");
+        assert_eq!(
+            user, account,
+            "User can update evidence only for her own habit"
+        );
 
         let mut existing_habits = match self.habits.get(&user) {
             Some(v) => v,
@@ -275,38 +198,63 @@ impl StickyHabitsContract {
 
         match &mut existing_habits.get(index) {
             Some(habit) => {
-                match action {
-                    "update_evidence" => {
-                        assert_eq!(
-                            user, account,
-                            "User can update evidence only for her own habit"
-                        );
-                        if let Some(e) = evidence {
-                            self.update_evidence_action(index, &mut existing_habits, habit, e);
-                        }
-                    }
-                    "approve" => {
-                        assert_eq!(
-                            habit.beneficiary, account,
-                            "Only beneficiary can approve habit for user"
-                        );
-                        self.approve_action(index, &mut existing_habits, habit, current_time);
-                    }
-                    "unlock_deposit" => {
-                        assert!(
-                            account == habit.beneficiary || account == user,
-                            "Only user or beneficiary associated to the habit can unlock deposit"
-                        );
-                        self.unlock_deposit_action(
-                            index,
-                            user,
-                            &mut existing_habits,
-                            habit,
-                            current_time,
-                        );
-                    }
-                    _ => {}
-                };
+                self.update_evidence_action(index, &mut existing_habits, habit, evidence);
+            }
+            None => panic!("Index {} is out of range", index),
+        }
+    }
+
+    // Beneficiary approves habit by setting "approved" flag to true
+    #[payable]
+    pub fn approve_habit(&mut self, user: AccountId, at_index: u16) {
+        let index = u64::from(at_index);
+        let account: AccountId = env::predecessor_account_id();
+        let current_time = env::block_timestamp();
+
+        log!("Approving habit for user {}", user);
+
+        let mut existing_habits = match self.habits.get(&user) {
+            Some(v) => v,
+            None => {
+                panic!("User {} has no habit yet", user);
+            }
+        };
+
+        match &mut existing_habits.get(index) {
+            Some(habit) => {
+                assert_eq!(
+                    habit.beneficiary, account,
+                    "Only beneficiary can approve habit for user"
+                );
+                self.approve_action(index, &mut existing_habits, habit, current_time);
+            }
+
+            None => panic!("Index {} is out of range", index),
+        }
+    }
+
+    #[payable]
+    pub fn unlock_deposit(&mut self, user: AccountId, at_index: u16) {
+        let index = u64::from(at_index);
+        let account: AccountId = env::predecessor_account_id();
+        let current_time = env::block_timestamp();
+
+        log!("Unlocking deposit for user {}", user);
+
+        let mut existing_habits = match self.habits.get(&user) {
+            Some(v) => v,
+            None => {
+                panic!("User {} has no habit yet", user);
+            }
+        };
+
+        match &mut existing_habits.get(index) {
+            Some(habit) => {
+                assert!(
+                    account == habit.beneficiary || account == user,
+                    "Only user or beneficiary associated to the habit can unlock deposit"
+                );
+                self.unlock_deposit_action(index, user, &mut existing_habits, habit, current_time);
             }
 
             None => panic!("Index {} is out of range", index),
@@ -369,6 +317,66 @@ impl StickyHabitsContract {
             habit.deposit = U128(0);
             let _updated = existing_habits.replace(index, habit);
         }
+    }
+
+    // Returns an array of habits for the user with from and limit parameters.
+    pub fn get_habits_user(
+        &self,
+        user: AccountId,
+        from_index: Option<u16>,
+        limit_to: Option<u16>,
+    ) -> Vec<Habit> {
+        let from = usize::from(from_index.unwrap_or(0u16));
+        let limit = usize::from(limit_to.unwrap_or(1u16));
+
+        let existing_habits = match self.habits.get(&user) {
+            Some(v) => v,
+            None => Vector::new(b"vector-id-1".to_vec()),
+        };
+
+        existing_habits.iter().skip(from).take(limit).collect()
+    }
+
+    // Returns a map of habits of beneficiary's friends with from and limit parameters.
+    pub fn get_habits_beneficiary(
+        &self,
+        beneficiary: AccountId,
+        from_index: Option<u16>,
+        limit_to: Option<u16>,
+    ) -> HashMap<AccountId, Vec<Habit>> {
+        let from = usize::from(from_index.unwrap_or(0u16));
+        let limit = usize::from(limit_to.unwrap_or(1u16));
+
+        let mut friends_habits: HashMap<AccountId, Vec<Habit>> = HashMap::new();
+
+        // Get users associated with beneficiary
+        let beneficiary_users = match self.beneficiaries.get(&beneficiary) {
+            Some(v) => v,
+            None => Vector::new(b"vector-id-2".to_vec()),
+        };
+
+        // Get habits from all associated users and filter them to those belonging to beneficiary
+        for user in beneficiary_users.iter() {
+            let user_habits = match self.habits.get(&user) {
+                Some(v) => v,
+                None => Vector::new(b"vector-id-1".to_vec()),
+            };
+            let user_habits_filtered: Vec<Habit> = user_habits
+                .iter()
+                .skip(from)
+                .take(limit)
+                .filter(|b| b.beneficiary == beneficiary)
+                .collect();
+            friends_habits.insert(user, user_habits_filtered);
+        }
+
+        friends_habits
+    }
+
+    // Returns actual contract balance
+    pub fn get_balance(&self) -> U64 {
+        assert!(env::state_exists(), "Not initialized yet");
+        U64(self.balance as u64)
     }
 }
 
